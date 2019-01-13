@@ -14,3 +14,4 @@ To do:
 - Update body and vehicle objects so that state is saved on the objects instead of in numpy arrays in scripts
 - Aerodynamics module to simulate atmospheric effects
 - Full 6dof capabilities with multiple bodies for simulation of Earth - Moon transfers for example
+- Plotting helper functions
