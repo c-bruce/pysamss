@@ -1,6 +1,7 @@
 # Date: 06/01/2019
 # Author: Callum Bruce
-# Script for modelling launch vehicle system
+# Orbital ISS example
+
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
@@ -12,7 +13,7 @@ startTime = time()
 
 # Define Earth
 earthRF = referenceFrame()
-earth = body(5.972e24,6.371e6,[0,0],earthRF)
+earth = body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
 
 # Define ISS
 issRF = referenceFrame()
@@ -35,7 +36,8 @@ issPos = iss.getPosition()
 fig, ax = plt.subplots()
 ax.axis('equal')
 ax.axis([-earth.radius*2,earth.radius*2,-earth.radius*2,earth.radius*2])
-earthPlot = plt.Circle((earth.position[0],earth.position[1]),earth.radius,color='b')
+earthPosition = earth.getPosition()
+earthPlot = plt.Circle((earthPosition[0], earthPosition[1]),earth.radius,color='b')
 ax.add_artist(earthPlot)
 ax.plot(state[0:,2],state[0:,3],color='k',lw=0.5)
 ax.plot([issPos[0],issPos[0]+issRF.i[0]*1000000],[issPos[1],issPos[1]+issRF.i[1]*1000000],c='r')

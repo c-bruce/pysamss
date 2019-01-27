@@ -1,6 +1,7 @@
 # Date: 06/01/2019
 # Author: Callum Bruce
-# Script for modelling launch vehicle system
+# Suborbital Falcon9 example
+
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
@@ -13,7 +14,7 @@ startTime = time()
 
 # Define Earth
 earthRF = referenceFrame()
-earth = body(5.972e24,6.371e6,[0,0],earthRF)
+earth = body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
 
 # Define Falcon9
 falcon9RF = referenceFrame()
@@ -84,7 +85,8 @@ falcon9Pos = falcon9.getPosition()
 fig, ax = plt.subplots()
 ax.axis('equal')
 ax.axis([-earth.radius*2,earth.radius*2,-earth.radius*2,earth.radius*2])
-earthPlot = plt.Circle((earth.position[0], earth.position[1]),earth.radius,color='b')
+earthPosition = earth.getPosition()
+earthPlot = plt.Circle((earthPosition[0], earthPosition[1]),earth.radius,color='b')
 ax.add_artist(earthPlot)
 ax.plot(state[0:,2],state[0:,3],color='k',lw=0.5)
 ax.plot([falcon9Pos[0],falcon9Pos[0]+falcon9RF.i[0]*1000000],[falcon9Pos[1],falcon9Pos[1]+falcon9RF.i[1]*1000000],c='r')

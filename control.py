@@ -1,6 +1,18 @@
+# Date: 06/01/2019
+# Author: Callum Bruce
+# Control module
+
 import numpy as np
 
 class PIDcontroller:
+    """
+    Create PIDcontroller object.
+    
+    Args:
+        gains (list): Controller gains [Kp,Ki,Kd]
+        lims (list): Limits on controller output [max,min]
+        windup (float): Windup value between 0 -> 1 (prevents integral windup if error/SP > windup)
+    """
     def __init__(self,gains,lims,windup):
         self.Kp = gains[0] # Proportional gain
         self.Ki = gains[1] # Integral gain
@@ -15,6 +27,17 @@ class PIDcontroller:
         self.output = np.array([]) # Output
     
     def calculate_output(self,PV,SP,dt):
+        """
+        Calculate output of PID controller.
+        
+        Args:
+            PV (double): Process variable
+            SP (double): Set point
+            dt (float): Timestep
+        
+        Returns:
+            output (double): Controller output
+        """
         self.PV = np.append(self.PV,PV)
         self.SP = np.append(self.SP,SP)
         self.error = np.append(self.error,SP-PV)

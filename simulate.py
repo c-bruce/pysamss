@@ -1,12 +1,18 @@
+# Date: 06/01/2019
+# Author: Callum Bruce
+# State space simulator and integration schemes module
+
 import numpy as np
 
 def simulate(obj,objRF,scheme,u,dt):
     """
-    Simulate the vehicle using a given integration scheme.
+    Simulate body/vehicle using a given integration scheme.
     
     Args:
+        obj (object): Object to simulate (body or vehicle)
+        objRF (object): Reference frame object belonging to obj
         scheme (function): Integration scheme {euler}
-        u (list): Input vector
+        u (list): Input vector (force and torque)
         dt (float): Time step
     
     Returns:
@@ -34,7 +40,6 @@ def simulate(obj,objRF,scheme,u,dt):
     
     state1 = scheme(state0,state_dot,dt)
     objRF.rotate(state1[5])
-    #objRF.rotateDot(state1[4])
     obj.setRF(objRF)
     return state1
 

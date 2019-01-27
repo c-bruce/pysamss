@@ -1,13 +1,10 @@
 # Date: 06/10/2018
 # Author: Callum Bruce
-# Python package for simulating space vehicles from launch to orbit.
+# Python package for simulating space vehicles from launch to orbit. Main module.
+
 import numpy as np
 from helpermath import transformationMatrix
-'''
-def euler(state0,state_dot,dt):
-    state1 = state0 + state_dot*dt
-    return state1
-'''
+
 class referenceFrame:
     """
     Create referenceFrame object.
@@ -35,23 +32,43 @@ class body:
     Args:
         mass (float): Body mass (kg)
         radius (float): Body radius (m)
-        position (list): Body position relative to referenceFrame
+        state (list): Body state [u,v,x,y,r,phi]
         bodyRF (obj): Body referenceFrame
     """
-    def __init__(self,mass,radius,position,RF):
+    def __init__(self,mass,radius,state,RF):
         self.mass = mass
         self.radius = radius
-        self.position = np.array(position)
+        self.state = state
         self.RF = RF
+        self.Iz = (2 / 5) * mass * radius**2
     
     ### GET METHODS ###
+    def getState(self):
+        state = self.state
+        return state
+    
     def getPosition(self):
-        position = self.position
+        position = np.array([self.state[2],self.state[3]])
         return position
+    
+    def getMass(self):
+        mass = self.mass
+        return mass
+    
+    def getIz(self):
+        Iz = self.Iz
+        return Iz
     
     def getRF(self):
         RF = self.RF
         return RF
+    
+    ### SET METHODS ###
+    def setState(self,state):
+        self.state = state
+        
+    def setRF(self,RF):
+        self.RF = RF
 
 class stage:
     """
@@ -81,7 +98,7 @@ class vehicle:
     
     Args:
         stages (list): List of stages [stage1,stage2,...]
-        state (list): Vehicle state [u,v,x,y,r,phi]
+        state (list): Vehicle state [u,v,x,y,phidot,phi]
         RF (obj): Vehicle body referenceFrame
         parentRF (obj): Vehicle parent referenceFrame
     """
@@ -109,25 +126,25 @@ class vehicle:
         state = np.array(self.state)
         return state
     
-    def getRF(self):
-        RF = self.RF
-        return RF
+    def getVelocity(self):
+        velocity = np.array([self.state[0],self.state[1]])
+        return velocity
     
     def getPosition(self):
         position = np.array([self.state[2],self.state[3]])
         return position
     
-    def getVelocity(self):
-        velocity = np.array([self.state[0],self.state[1]])
-        return velocity
+    def getPhiDot(self):
+        phidot = np.array([self.state[4]])
+        return phidot
     
     def getPhi(self):
         phi = np.array([self.state[5]])
         return phi
     
-    def getPhiDot(self):
-        phidot = np.array([self.state[4]])
-        return phidot
+    def getRF(self):
+        RF = self.RF
+        return RF
     
     def getMass(self):
         mass = self.mass
@@ -155,19 +172,19 @@ class vehicle:
     def rotateRF(self,theta):
         self.RF.rotate(theta)
     
+    def setVelocity(self,velocity):
+        self.state[0] = velocity[0]
+        self.state[1] = velocity[1]
+        
     def setPosition(self,position):
         self.state[2] = position[0]
         self.state[3] = position[1]
     
-    def setVelocity(self,velocity):
-        self.state[0] = velocity[0]
-        self.state[1] = velocity[1]
+    def setPhiDot(self,phidot):
+        self.state[4] = phidot
     
     def setPhi(self,phi):
         self.state[5] = phi
-    
-    def setPhiDot(self,phidot):
-        self.state[4] = phidot
         
     ### UPDATE METHODS ###
     def updateMass(self,m_dot):

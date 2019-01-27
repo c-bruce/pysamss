@@ -1,21 +1,29 @@
+# Date: 06/01/2019
+# Author: Callum Bruce
+# Calculate forces and torques acting on objects
+
 import numpy as np
 from helpermath import transformationMatrix
 
-def gravity(body,vehicle):
+def gravity(obj1,obj2):
     """
-    Calculate bodyRF gravityForce acting on vehicle.
+    Calculate gravityForce acting on an obj2 (body or vehicle.
     
     Args:
-        body (obj): Body object (i.e. earth)
-        vehicle (obj): Vehicle object (i.e. falcon9)
+        obj1 (obj): Body or vehicle object
+        obj2 (obj): Body or vehicle object
+    
+    Returns:
+        gravityForce (np.array): gravityForce acting on obj2.
     """
-    k = 3.9818e14 # from k = 9.81 * EarthRadius**2
-    bodyPosition = body.getPosition()
-    vehiclePosition = vehicle.getPosition()
-    vehicleMass = vehicle.getMass()
-    alt = np.linalg.norm(vehiclePosition - bodyPosition) # |u|
-    gravityForce = vehicleMass*(k/alt**2)
-    gravityForce = -gravityForce*(vehiclePosition-bodyPosition)/np.linalg.norm(vehiclePosition-bodyPosition) # u/|u|
+    G = 6.67408e-11 # Gravitational constant [m**3.kg**-1.s**-2]
+    obj1Mass = obj1.getMass()
+    obj2Mass = obj2.getMass()
+    obj1Position = obj1.getPosition()
+    obj2Position = obj2.getPosition()
+    r = np.linalg.norm(obj1Position - obj2Position)
+    F = G * ((obj1Mass * obj2Mass) / r**2)
+    gravityForce = F * (obj1Position - obj2Position) / np.linalg.norm(obj1Position - obj2Position)
     return gravityForce
 
 def thrust(body,vehicle,m_dot,Isp,d,dt):
@@ -31,10 +39,10 @@ def thrust(body,vehicle,m_dot,Isp,d,dt):
         dt (float): Time step
     
     Returns:
-        forceThrust (np.array): np.array force acting on CoM in bodyRF
-        torqueThrust (np.array): np.array torque acting about CoM in bodyRF
+        forceThrust (np.array): np.array force acting on CoM in bodyRF due to thrust
+        torqueThrust (np.array): np.array torque acting about CoM in bodyRF due to thrust
     """
-    if vehicle.stages[0].wetmass > 0: # If stage has zero fuel forceThrust and torqueThrust
+    if vehicle.stages[0].wetmass > 0: # If stage has zero fuel forceThrust and torqueThrust = 0
         # Calculate thrust magnitude
         g0 = 9.81 # Standard gravity (m/s^2)
         thrust = g0 * Isp * m_dot
@@ -46,7 +54,6 @@ def thrust(body,vehicle,m_dot,Isp,d,dt):
 
         # Calculate bodyRF force vector acting @ CoM
         forceThrust_body = thrust*np.array([np.cos(d),0]) # vehicleRF forces acting @ CoM
-        #forceThrust_body = thrust*np.array([np.cos(d),np.sin(d)])
         referenceFrame1 = vehicle.getRF()
         referenceFrame2 = body.getRF()
         T = transformationMatrix(referenceFrame1,referenceFrame2) # transformationMatrix vehicleRF -> bodyRF
