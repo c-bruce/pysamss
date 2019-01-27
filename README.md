@@ -5,10 +5,10 @@ Python package for simulating space vehicles from launch to orbit. Supports 3dof
 
 "body" objects can be used to represent celestial bodies like the Earth, Moon, Sun etc. Each body has it's own reference frame.
 
-"vehicle" objects can be used to represent and simulate launch vehicles. Vehicles are made up of "stage" objects. Each vehicle has it's own reference frame.
+"vehicle" objects can be used to represent and simulate launch vehicles or satellites. Vehicles are made up of "stage" objects. Each vehicle has it's own reference frame.
 
 To do:
-- Enable simulation of multiple body objects (i.e. to simulate n-body problems)
+- Enable simulation of multiple body objects (i.e. to simulate n-body problems) [DONE]
 - Improve Iz calculation for vehicles
 - Full doc strings for classes and methods
 - Update body and vehicle objects so that state is saved on the objects instead of in numpy arrays in scripts
