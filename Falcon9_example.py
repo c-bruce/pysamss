@@ -34,7 +34,6 @@ d = np.array([0.0]) # Initial gimbal angle (deg)
 # Simulation loop
 dt = 0.1
 t = np.array([0])
-state = np.array([falcon9.getState()])
 forceGravity = np.array(gravity(earth,falcon9)) # forceGravity
 forceThrust, torqueThrust = thrust(earth,falcon9,m_dot,Isp,d[-1],dt) # forceThrust, torqueThrust from fuel burn
 forceThrustSave = np.array([forceThrust])
@@ -42,6 +41,9 @@ us = np.array([np.append(forceGravity+forceThrust,torqueThrust)]) # [Fx, Fy, Mz]
 
 for i in range(0,8000):
     t = np.append(t,t[i]+dt)
+
+    # Simulate falcon9
+    simulate(falcon9,falcon9RF,euler,us[i],dt)
     '''
     # Fix attitude
     if i > 300 and i < 900:
@@ -67,11 +69,6 @@ for i in range(0,8000):
         d = np.append(d,d_new)
     else:
         d = np.append(d,0)
-        
-    # Simulate falcon9
-    state1 = simulate(falcon9,falcon9RF,euler,us[i],dt) # Calculate state1
-    falcon9.setState(state1) # Set falcon9 state = state1
-    state = np.append(state,[state1],axis=0) # Append state1 to state for plotting later
 
     # Calculate forces and torques acting on falcon9
     forceGravity = np.array(gravity(earth,falcon9)) # forceGravity
@@ -81,6 +78,7 @@ for i in range(0,8000):
     us = np.append(us,u,axis=0) # Append new u to us
 
 # Plotting
+state = falcon9.state
 falcon9Pos = falcon9.getPosition()
 fig, ax = plt.subplots()
 ax.axis('equal')
@@ -123,6 +121,7 @@ ax2[2].plot(yawControl.int)
 ax2[2].set_title('int_error')
 ax2[2].set_ylabel('[rad]')
 ax2[2].grid()
+plt.show()
 
 endTime = time()
-print(str(endTime - startTime) + ' seconds')
+print(str(endTime - startTime) + ' Seconds')

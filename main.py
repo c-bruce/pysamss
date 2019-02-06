@@ -8,7 +8,7 @@ from helpermath import transformationMatrix
 class referenceFrame:
     """
     Create referenceFrame object.
-    
+
     Note:
         - Initial self.i = np.array([1,0])
         - Initial self.j = np.array([0,1])
@@ -16,7 +16,7 @@ class referenceFrame:
     def __init__(self):
         self.i = np.array([1,0])
         self.j = np.array([0,1])
-    
+
     def rotate(self,theta):
         i = np.array([1,0])
         j = np.array([0,1])
@@ -28,7 +28,7 @@ class referenceFrame:
 class body:
     """
     Create body object
-    
+
     Args:
         mass (float): Body mass (kg)
         radius (float): Body radius (m)
@@ -38,48 +38,51 @@ class body:
     def __init__(self,mass,radius,state,RF):
         self.mass = mass
         self.radius = radius
-        self.state = state
+        self.state = np.array([state])
         self.RF = RF
         self.Iz = (2 / 5) * mass * radius**2
-    
+
     ### GET METHODS ###
     def getState(self):
-        state = self.state
+        state = self.state[-1]
         return state
-    
+
     def getPosition(self):
-        position = np.array([self.state[2],self.state[3]])
+        position = np.array([self.state[-1,2],self.state[-1,3]])
         return position
-    
+
     def getMass(self):
         mass = self.mass
         return mass
-    
+
     def getIz(self):
         Iz = self.Iz
         return Iz
-    
+
     def getRF(self):
         RF = self.RF
         return RF
-    
+
     ### SET METHODS ###
     def setState(self,state):
-        self.state = state
-        
+        self.state[-1] = state
+
     def setRF(self,RF):
         self.RF = RF
+
+    def appendState(self,state):
+        self.state = np.append(self.state,[state],axis=0)
 
 class stage:
     """
     Create stage object.
-    
+
     Args:
         mass (float): Stage mass (kg)
         radius (float): Stage radius (m)
         length (float): Stage length (m)
         position (list): Stage position relative to referenceFrame [x,y] (m)
-    
+
     Note:
         - Stage objects are assumed cylindrical with CoT 0.5*length aft of position.
         - drymass = 0.05*mass, wetmass = 0.95*mass
@@ -95,7 +98,7 @@ class stage:
 class vehicle:
     """
     Create vehicle object made up of stage objects.
-    
+
     Args:
         stages (list): List of stages [stage1,stage2,...]
         state (list): Vehicle state [u,v,x,y,phidot,phi]
@@ -104,7 +107,7 @@ class vehicle:
     """
     def __init__(self,stages,state,RF,parentRF):
         self.stages = stages
-        self.state = state
+        self.state = np.array([state])
         self.RF = RF
         self.parentRF = parentRF
         self.mass = 0.0
@@ -118,79 +121,82 @@ class vehicle:
         self.CoT = np.array([-self.length,0])
         ### Iz METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET
         self.Iz = (1/12)*self.mass*(3*(self.stages[-1].radius**2)+self.length**2) # Assumes constant radius = stage[-1].radius
-        self.state[0] = self.state[0] + self.CoM[0]
-        self.state[1] = self.state[1] + self.CoM[1]
-    
+        self.state[-1,0] = self.state[-1,0] + self.CoM[0]
+        self.state[-1,1] = self.state[-1,1] + self.CoM[1]
+
     ### GET METHODS ###
     def getState(self):
-        state = np.array(self.state)
+        state = np.array(self.state[-1])
         return state
-    
+
     def getVelocity(self):
-        velocity = np.array([self.state[0],self.state[1]])
+        velocity = np.array([self.state[-1,0],self.state[-1,1]]) #np.array([self.state[0],self.state[1]])
         return velocity
-    
+
     def getPosition(self):
-        position = np.array([self.state[2],self.state[3]])
+        position = np.array([self.state[-1,2],self.state[-1,3]])
         return position
-    
+
     def getPhiDot(self):
-        phidot = np.array([self.state[4]])
+        phidot = np.array([self.state[-1,4]])
         return phidot
-    
+
     def getPhi(self):
-        phi = np.array([self.state[5]])
+        phi = np.array([self.state[-1,5]])
         return phi
-    
+
     def getRF(self):
         RF = self.RF
         return RF
-    
+
     def getMass(self):
         mass = self.mass
         return mass
-    
+
     def getIz(self):
         Iz = self.Iz
         return Iz
-    
+
     def getCoM(self):
         CoM = self.CoM
         return CoM
-    
+
     def getCoT(self):
         CoT = self.CoT
         return CoT
-    
+
     ### SET METHODS ###
     def setState(self,state):
-        self.state = state
-    
+        self.state[-1] = state
+
     def setRF(self,RF):
         self.RF = RF
-    
+
     def rotateRF(self,theta):
         self.RF.rotate(theta)
-    
+
     def setVelocity(self,velocity):
-        self.state[0] = velocity[0]
-        self.state[1] = velocity[1]
-        
+        self.state[-1,0] = velocity[0]
+        self.state[-1,1] = velocity[1]
+
     def setPosition(self,position):
-        self.state[2] = position[0]
-        self.state[3] = position[1]
-    
+        self.state[-1,2] = position[0]
+        self.state[-1,3] = position[1]
+
     def setPhiDot(self,phidot):
-        self.state[4] = phidot
-    
+        self.state[-1,4] = phidot
+
     def setPhi(self,phi):
-        self.state[5] = phi
-        
+        self.state[-1,5] = phi
+
+    def appendState(self,state):
+        self.state = np.append(self.state,[state],axis=0)
+
     ### UPDATE METHODS ###
     def updateMass(self,m_dot):
         """
         Update self.stage[0].wetmass by m_dot.
-        
+
         Args:
             m_dot (float): Mass delta -ive denotes fuel burnt.
         """
