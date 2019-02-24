@@ -5,7 +5,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
-from main import referenceFrame, body, stage, vehicle
+from main import ReferenceFrame, Body, Stage, Vehicle
 from forcetorque import gravity, thrust
 from simulate import simulate, euler
 from control import PIDcontroller
@@ -13,14 +13,14 @@ from control import PIDcontroller
 startTime = time()
 
 # Define Earth
-earthRF = referenceFrame()
-earth = body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
+earthRF = ReferenceFrame()
+earth = Body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
 
 # Define Falcon9
-falcon9RF = referenceFrame()
-stage1 = stage(258500,1.85,13.1,[-6.55,0])
-stage2 = stage(52000,1.85,35,[-30.6,0])
-falcon9 = vehicle([stage1,stage2],[0,0,earth.radius+48.1,0,0,0],earthRF,falcon9RF)
+falcon9RF = ReferenceFrame()
+stage1 = Stage(258500,1.85,13.1,[-6.55,0])
+stage2 = Stage(52000,1.85,35,[-30.6,0])
+falcon9 = Vehicle([stage1,stage2],[0,0,earth.radius+48.1,0,0,0],earthRF,falcon9RF)
 Isp = 300 # (s)
 m_dot = 1500 # (kg/s)
 
@@ -34,16 +34,18 @@ d = np.array([0.0]) # Initial gimbal angle (deg)
 # Simulation loop
 dt = 0.1
 t = np.array([0])
-forceGravity = np.array(gravity(earth,falcon9)) # forceGravity
+
+# falcon9 Initial Forces
+forceGravity = gravity(earth,falcon9) # forceGravity
 forceThrust, torqueThrust = thrust(earth,falcon9,m_dot,Isp,d[-1],dt) # forceThrust, torqueThrust from fuel burn
 forceThrustSave = np.array([forceThrust])
-us = np.array([np.append(forceGravity+forceThrust,torqueThrust)]) # [Fx, Fy, Mz] earthRF
+falcon9.appendU(list(np.append(forceGravity+forceThrust,torqueThrust)))
 
 for i in range(0,8000):
     t = np.append(t,t[i]+dt)
 
     # Simulate falcon9
-    simulate(falcon9,falcon9RF,euler,us[i],dt)
+    simulate(falcon9,falcon9RF,euler,dt)
     '''
     # Fix attitude
     if i > 300 and i < 900:
@@ -71,14 +73,13 @@ for i in range(0,8000):
         d = np.append(d,0)
 
     # Calculate forces and torques acting on falcon9
-    forceGravity = np.array(gravity(earth,falcon9)) # forceGravity
+    forceGravity = gravity(earth,falcon9) # forceGravity
     forceThrust, torqueThrust = thrust(earth,falcon9,m_dot,Isp,d[-1],dt) # forceThrust, torqueThrust from fuel burn
     forceThrustSave = np.append(forceThrustSave,[forceThrust],axis=0)
-    u = np.array([np.append(forceGravity+forceThrust,torqueThrust)]) # [Fx, Fy, Mz] earthRF
-    us = np.append(us,u,axis=0) # Append new u to us
+    falcon9.appendU(list(np.append(forceGravity+forceThrust,torqueThrust)))
 
 # Plotting
-state = falcon9.state
+state = np.array(falcon9.state)
 falcon9Pos = falcon9.getPosition()
 fig, ax = plt.subplots()
 ax.axis('equal')

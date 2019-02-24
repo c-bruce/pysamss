@@ -13,11 +13,11 @@ To do:
 - Aerodynamics module to simulate atmospheric effects
 - Full 6dof capabilities with multiple bodies for simulation of Earth - Moon transfers for example
 - Plotting helper functions
-- Update body and vehicle objects to store u vector over time in same way state is stored
 - Add System class and implement method of simulating full system (i.e. not needing to simulate individual objects)
 - Implement getForceTorque() functions on body and vehicle objects
-- Optimise appending on objects since this seems to be slowing things down
 
 Complete:
-- Enable simulation of multiple body objects (i.e. to simulate n-body problems) [DONE]
-- Update body and vehicle objects so that state is saved on the objects instead of in numpy arrays in scripts [DONE]
+- Enable simulation of multiple body objects (i.e. to simulate n-body problems)
+- Update body and vehicle objects so that state is saved on the objects instead of in numpy arrays in scripts
+- Update body and vehicle objects to store u vector over time in same way state is stored
+- Optimise appending on objects since this seems to be slowing things down

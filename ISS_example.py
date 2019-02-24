@@ -5,34 +5,41 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
-from main import referenceFrame, body, stage, vehicle
+from main import ReferenceFrame, Body, Stage, Vehicle
 from forcetorque import gravity, thrust
 from simulate import simulate, euler
 
 startTime = time()
 
 # Define Earth
-earthRF = referenceFrame()
-earth = body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
+earthRF = ReferenceFrame()
+earth = Body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
 
 # Define ISS
-issRF = referenceFrame()
-stage1 = stage(419725,1,10,[0,0])
-iss = vehicle([stage1],[0,7660,earth.radius+404000,0,0,0],earthRF,issRF)
+issRF = ReferenceFrame()
+stage1 = Stage(419725,1,10,[0,0])
+iss = Vehicle([stage1],[0,7660,earth.radius+404000,0,0,0],earthRF,issRF)
 
 # Simulation loop
-state = np.array([iss.getState()])
-us = np.array([np.append(gravity(earth,iss),0)])
-
 dt = 0.1
-for i in range(0,55610):
-    # Simulate ISS
-    simulate(iss,issRF,euler,us[i],dt)
+t = np.array([0])
 
-    us = np.append(us,[np.append(gravity(earth,iss),0)],axis=0) # Append new u to us
+# iss Initial Forces
+forceGravity = gravity(earth,iss)
+iss.appendU(list(np.append(forceGravity,0)))
+
+for i in range(0,55610):
+    t = np.append(t,t[i]+dt)
+
+    # Simulate iss
+    simulate(iss,issRF,euler,dt)
+
+    # Calculate forces and torques acting on iss
+    forceGravity = gravity(earth,iss)
+    iss.appendU(list(np.append(forceGravity,0)))
 
 # Plotting
-state = iss.state
+state = np.array(iss.state)
 issPos = iss.getPosition()
 fig, ax = plt.subplots()
 ax.axis('equal')

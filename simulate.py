@@ -4,7 +4,7 @@
 
 import numpy as np
 
-def simulate(obj,objRF,scheme,u,dt):
+def simulate(obj,objRF,scheme,dt):
     """
     Simulate body/vehicle using a given integration scheme.
 
@@ -12,13 +12,13 @@ def simulate(obj,objRF,scheme,u,dt):
         obj (object): Object to simulate (body or vehicle)
         objRF (object): Reference frame object belonging to obj
         scheme (function): Integration scheme {euler}
-        u (list): Input vector (force and torque)
         dt (float): Time step
 
     Returns:
         state1 (list): Updated state vector
     """
     state0 = obj.getState()
+    U = obj.getU()
     m = obj.getMass()
     Iz = obj.getIz()
 
@@ -36,7 +36,7 @@ def simulate(obj,objRF,scheme,u,dt):
                   [0, 0, 1/Iz],
                   [0, 0, 0]])
 
-    state_dot = np.dot(A,state0) + np.dot(B,u)
+    state_dot = np.dot(A,state0) + np.dot(B,U)
 
     state1 = scheme(state0,state_dot,dt)
     obj.appendState(state1)

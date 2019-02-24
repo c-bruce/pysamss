@@ -8,11 +8,11 @@ from helpermath import transformationMatrix
 def gravity(obj1,obj2):
     """
     Calculate gravityForce acting on an obj2 (body or vehicle.
-    
+
     Args:
         obj1 (obj): Body or vehicle object
         obj2 (obj): Body or vehicle object
-    
+
     Returns:
         gravityForce (np.array): gravityForce acting on obj2.
     """
@@ -29,7 +29,7 @@ def gravity(obj1,obj2):
 def thrust(body,vehicle,m_dot,Isp,d,dt):
     """
     Calculate bodyRF forceThrust and torqueThrust due to fuel burn acting on vehicle.
-    
+
     Args:
         body (obj): Body object (i.e. earth)
         vehicle (obj): Vehicle object (i.e. falcon9)
@@ -37,7 +37,7 @@ def thrust(body,vehicle,m_dot,Isp,d,dt):
         Isp (float): Specific impulse (s)
         d (float): Gimbal angle (deg)
         dt (float): Time step
-    
+
     Returns:
         forceThrust (np.array): np.array force acting on CoM in bodyRF due to thrust
         torqueThrust (np.array): np.array torque acting about CoM in bodyRF due to thrust
@@ -46,7 +46,7 @@ def thrust(body,vehicle,m_dot,Isp,d,dt):
         # Calculate thrust magnitude
         g0 = 9.81 # Standard gravity (m/s^2)
         thrust = g0 * Isp * m_dot
-        
+
         # Calculate bodyRF torque vector acting @ CoM
         momentArm = vehicle.CoM - vehicle.CoT
         forceCoT = thrust*np.array([np.cos(d),np.sin(d)]) # vehicleRF forces acting @ CoT
@@ -58,7 +58,7 @@ def thrust(body,vehicle,m_dot,Isp,d,dt):
         referenceFrame2 = body.getRF()
         T = transformationMatrix(referenceFrame1,referenceFrame2) # transformationMatrix vehicleRF -> bodyRF
         forceThrust = np.dot(T,forceThrust_body) # bodyRF forces acting @ CoM
-        
+
         # Update vehicle mass due to fuel burn
         vehicle.updateMass(-m_dot*dt)
     else:

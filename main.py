@@ -5,7 +5,7 @@
 import numpy as np
 from helpermath import transformationMatrix
 
-class referenceFrame:
+class ReferenceFrame:
     """
     Create referenceFrame object.
 
@@ -25,7 +25,7 @@ class referenceFrame:
         self.i = np.dot(R,i)
         self.j = np.dot(R,j)
 
-class body:
+class Body:
     """
     Create body object
 
@@ -38,7 +38,8 @@ class body:
     def __init__(self,mass,radius,state,RF):
         self.mass = mass
         self.radius = radius
-        self.state = np.array([state])
+        self.state = [state]
+        self.U = [] # [Fx, Fy, Mz] BodyRF
         self.RF = RF
         self.Iz = (2 / 5) * mass * radius**2
 
@@ -47,8 +48,12 @@ class body:
         state = self.state[-1]
         return state
 
+    def getU(self):
+        U = np.array(self.U[-1])
+        return U
+
     def getPosition(self):
-        position = np.array([self.state[-1,2],self.state[-1,3]])
+        position = np.array([self.state[-1][2], self.state[-1][3]])
         return position
 
     def getMass(self):
@@ -71,9 +76,12 @@ class body:
         self.RF = RF
 
     def appendState(self,state):
-        self.state = np.append(self.state,[state],axis=0)
+        self.state.append(state)
 
-class stage:
+    def appendU(self,U):
+        self.U.append(U)
+
+class Stage:
     """
     Create stage object.
 
@@ -95,7 +103,7 @@ class stage:
         self.length = length
         self.position = np.array(position)
 
-class vehicle:
+class Vehicle:
     """
     Create vehicle object made up of stage objects.
 
@@ -107,7 +115,8 @@ class vehicle:
     """
     def __init__(self,stages,state,RF,parentRF):
         self.stages = stages
-        self.state = np.array([state])
+        self.state = [state]
+        self.U = [] # [Fx, Fy, Mz] VehicleRF
         self.RF = RF
         self.parentRF = parentRF
         self.mass = 0.0
@@ -121,28 +130,32 @@ class vehicle:
         self.CoT = np.array([-self.length,0])
         ### Iz METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET
         self.Iz = (1/12)*self.mass*(3*(self.stages[-1].radius**2)+self.length**2) # Assumes constant radius = stage[-1].radius
-        self.state[-1,0] = self.state[-1,0] + self.CoM[0]
-        self.state[-1,1] = self.state[-1,1] + self.CoM[1]
+        self.state[-1][0] = self.state[-1][0] + self.CoM[0]
+        self.state[-1][1] = self.state[-1][1] + self.CoM[1]
 
     ### GET METHODS ###
     def getState(self):
         state = np.array(self.state[-1])
         return state
 
+    def getU(self):
+        U = np.array(self.U[-1])
+        return U
+
     def getVelocity(self):
-        velocity = np.array([self.state[-1,0],self.state[-1,1]]) #np.array([self.state[0],self.state[1]])
+        velocity = np.array([self.state[-1][0],self.state[-1][1]])
         return velocity
 
     def getPosition(self):
-        position = np.array([self.state[-1,2],self.state[-1,3]])
+        position = np.array([self.state[-1][2],self.state[-1][3]])
         return position
 
     def getPhiDot(self):
-        phidot = np.array([self.state[-1,4]])
+        phidot = np.array([self.state[-1][4]])
         return phidot
 
     def getPhi(self):
-        phi = np.array([self.state[-1,5]])
+        phi = np.array([self.state[-1][5]])
         return phi
 
     def getRF(self):
@@ -176,21 +189,24 @@ class vehicle:
         self.RF.rotate(theta)
 
     def setVelocity(self,velocity):
-        self.state[-1,0] = velocity[0]
-        self.state[-1,1] = velocity[1]
+        self.state[-1][0] = velocity[0]
+        self.state[-1][1] = velocity[1]
 
     def setPosition(self,position):
-        self.state[-1,2] = position[0]
-        self.state[-1,3] = position[1]
+        self.state[-1][2] = position[0]
+        self.state[-1][3] = position[1]
 
     def setPhiDot(self,phidot):
-        self.state[-1,4] = phidot
+        self.state[-1][4] = phidot
 
     def setPhi(self,phi):
-        self.state[-1,5] = phi
+        self.state[-1][5] = phi
 
     def appendState(self,state):
-        self.state = np.append(self.state,[state],axis=0)
+        self.state.append(state)
+
+    def appendU(self,U):
+        self.U.append(U)
 
     ### UPDATE METHODS ###
     def updateMass(self,m_dot):
