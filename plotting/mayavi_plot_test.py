@@ -50,7 +50,7 @@ earthRadius = 6.371e6
 plotBody(figure, earthRadius, earthPosition, earthImageFile)
 
 # Plot trajectory
-points = np.load('falcon9_points.npy')
+points = np.load('iss_points.npy')
 color = (1, 1, 1)
 plotTrajectory(figure, points, color)
 
