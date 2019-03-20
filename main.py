@@ -32,15 +32,17 @@ class Body:
     Args:
         mass (float): Body mass (kg)
         radius (float): Body radius (m)
-        state (list): Body state [u,v,x,y,r,phi]
+        state (list): Body state [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
         bodyRF (obj): Body referenceFrame
     """
     def __init__(self,mass,radius,state,RF):
         self.mass = mass
         self.radius = radius
         self.state = [state]
-        self.U = [] # [Fx, Fy, Mz] BodyRF
+        self.U = [] # [Fx, Fy, Fz, Mx, My, Mz] BodyRF
         self.RF = RF
+        self.Ix = (2 / 5) * mass * radius**2
+        self.Iy = (2 / 5) * mass * radius**2
         self.Iz = (2 / 5) * mass * radius**2
 
     ### GET METHODS ###
@@ -53,12 +55,20 @@ class Body:
         return U
 
     def getPosition(self):
-        position = np.array([self.state[-1][2], self.state[-1][3]])
+        position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
         return position
 
     def getMass(self):
         mass = self.mass
         return mass
+
+    def getIx(self):
+        Ix = self.Ix
+        return Ix
+
+    def getIy(self):
+        Iy = self.Iy
+        return Iy
 
     def getIz(self):
         Iz = self.Iz

@@ -13,16 +13,16 @@ startTime = time()
 
 # Define Earth
 earthRF = ReferenceFrame()
-earth = Body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
+earth = Body(5.972e24,6.371e6,[0,0,0,0,0,0,0,0,0,0,0,0],earthRF)
 
 # Define Moon
 moonRF = ReferenceFrame()
-moon = Body(7.348e22,1.737e6,[0,1022,3.84402e8,0,0,0],moonRF)
+moon = Body(7.348e22,1.737e6,[0,1022,0,3.84402e8,0,0,0,0,0,0,0,0],moonRF)
 
 # earth, moon Initial Forces
 gravityForce = gravity(earth,moon)
-earth.appendU(list(np.append(-gravityForce,0)))
-moon.appendU(list(np.append(gravityForce,0)))
+earth.appendU(list(np.append(-gravityForce,[0,0,0])))
+moon.appendU(list(np.append(gravityForce,[0,0,0])))
 
 # Simulation loop
 dt = 60
@@ -40,8 +40,8 @@ for i in range(0,39312):
     gravityForce = gravity(earth,moon)
 
     # Store force
-    earth.appendU(list(np.append(-gravityForce,0)))
-    moon.appendU(list(np.append(gravityForce,0)))
+    earth.appendU(list(np.append(-gravityForce,[0,0,0])))
+    moon.appendU(list(np.append(gravityForce,[0,0,0])))
 
 # Plotting
 state_earth = np.array(earth.state)
@@ -53,12 +53,12 @@ ax.axis([-earth.radius*100,earth.radius*100,-earth.radius*100,earth.radius*100])
 earthPosition = earth.getPosition()
 earthPlot = plt.Circle((earthPosition[0], earthPosition[1]),earth.radius,color='b')
 ax.add_artist(earthPlot)
-ax.plot(state_earth[0:,2],state_earth[0:,3],color='k',lw=0.5)
+ax.plot(state_earth[:,3],state_earth[:,4],color='k',lw=0.5)
 
 moonPosition = moon.getPosition()
 moonPlot = plt.Circle((moonPosition[0], moonPosition[1]),moon.radius,color='gray')
 ax.add_artist(moonPlot)
-ax.plot(state_moon[0:,2],state_moon[0:,3],color='k',lw=0.5)
+ax.plot(state_moon[:,3],state_moon[:,4],color='k',lw=0.5)
 plt.show()
 
 endTime = time()
