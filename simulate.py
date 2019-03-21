@@ -4,7 +4,7 @@
 
 import numpy as np
 
-def simulate(obj,objRF,scheme,dt):
+def simulate(obj, objRF, scheme, dt):
     """
     Simulate body/vehicle using a given integration scheme.
 
@@ -59,7 +59,7 @@ def simulate(obj,objRF,scheme,dt):
 
     state1 = scheme(state0,state_dot,dt)
     obj.appendState(state1)
-    objRF.rotate(state1[5])
+    objRF.rotate(state1[11])
     obj.setRF(objRF)
 
 # Integration schemes

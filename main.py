@@ -7,7 +7,7 @@ from helpermath import transformationMatrix
 
 class ReferenceFrame:
     """
-    Create referenceFrame object.
+    Create ReferenceFrame object.
 
     Note:
         - Initial self.i = np.array([1,0])
@@ -25,9 +25,58 @@ class ReferenceFrame:
         self.i = np.dot(R,i)
         self.j = np.dot(R,j)
 
+class ReferenceFrame3D:
+    """
+    Create ReferenceFrame object.
+
+    Note:
+        - Initial self.i = np.array([1, 0, 0])
+        - Initial self.j = np.array([0, 1, 0])
+        - Initial self.k = np.array([0, 0, 1])
+    """
+    def __init__(self):
+        self.i = np.array([1, 0, 0])
+        self.j = np.array([0, 1, 0])
+        self.k = np.array([0, 0, 1])
+
+    def rotate(self, phi, theta, psi):
+        """
+        Rotate ReferenceFrame about x (phi), y (theta) and z (psi).
+
+        Args:
+            phi (float): Angle to rotate about in x [rads].
+            theta (float): Angle to rotate about in y [rads].
+            psi (float): Angle to rotate about in z [rads].
+        """
+        i = np.array([1, 0, 0])
+        j = np.array([0, 1, 0])
+        k = np.array([0, 0, 1])
+
+        Rx = np.array([[1, 0, 0],
+                       [0, np.cos(phi), -np.sin(phi)],
+                       [0, np.sin(phi), np.cos(phi)]])
+
+        Ry = np.array([[np.cos(theta), 0, np.sin(theta)],
+                       [0, 1, 0],
+                       [-np.sin(theta), 0, np.cos(theta)]])
+
+        Rz = np.array([[np.cos(psi), -np.sin(psi), 0],
+                       [np.sin(psi), np.cos(psi), 0],
+                       [0, 0, 1]])
+
+        R = np.matmul(Rz,np.matmul(Ry,Rx))
+        '''
+        R = np.array([[np.cos(psi)*np.cos(theta), np.cos(psi)*np.sin(theta)*np.sin(phi) - np.sin(psi)*np.cos(phi), np.cos(psi)*np.sin(theta)*np.cos(phi) + np.sin(psi)*np.sin(phi)],
+                      [np.sin(psi)*np.cos(theta), np.sin(psi)*np.sin(theta)*np.sin(phi) + np.cos(psi)*np.cos(phi), np.sin(psi)*np.sin(theta)*np.cos(phi) - np.cos(psi)*np.sin(phi)],
+                      [-np.sin(theta), np.cos(theta)*np.sin(phi), np.cos(theta)*np.cos(phi)]])
+        '''
+        self.i = np.dot(Rx,i)
+        self.j = np.dot(Ry,j)
+        self.k = np.dot(Rz,k)
+
 class Body:
     """
-    Create body object
+    Create Body object
 
     Args:
         mass (float): Body mass (kg)
@@ -35,17 +84,23 @@ class Body:
         state (list): Body state [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
         bodyRF (obj): Body referenceFrame
     """
-    def __init__(self,mass,radius,state,RF):
+    def __init__(self, mass, radius, state, RF):
         self.mass = mass
         self.radius = radius
         self.state = [state]
         self.U = [] # [Fx, Fy, Fz, Mx, My, Mz] BodyRF
-        self.RF = RF
         self.Ix = (2 / 5) * mass * radius**2
         self.Iy = (2 / 5) * mass * radius**2
         self.Iz = (2 / 5) * mass * radius**2
+        self.RF = RF
 
     ### GET METHODS ###
+    def getMass(self):
+        return self.mass
+
+    def getRadius(self):
+        return self.radius
+
     def getState(self):
         state = self.state[-1]
         return state
@@ -54,38 +109,31 @@ class Body:
         U = np.array(self.U[-1])
         return U
 
-    def getPosition(self):
-        position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
-        return position
-
-    def getMass(self):
-        mass = self.mass
-        return mass
-
     def getIx(self):
-        Ix = self.Ix
-        return Ix
+        return self.Ix
 
     def getIy(self):
-        Iy = self.Iy
-        return Iy
+        return self.Iy
 
     def getIz(self):
-        Iz = self.Iz
-        return Iz
+        return self.Iz
 
     def getRF(self):
         RF = self.RF
         return RF
 
+    def getPosition(self):
+        position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
+        return position
+
     ### SET METHODS ###
-    def setState(self,state):
+    def setState(self, state):
         self.state[-1] = state
 
-    def setRF(self,RF):
+    def setRF(self, RF):
         self.RF = RF
 
-    def appendState(self,state):
+    def appendState(self, state):
         self.state.append(state)
 
     def appendU(self,U):
@@ -93,7 +141,7 @@ class Body:
 
 class Stage:
     """
-    Create stage object.
+    Create Stage object.
 
     Args:
         mass (float): Stage mass (kg)
@@ -115,7 +163,7 @@ class Stage:
 
 class Vehicle:
     """
-    Create vehicle object made up of stage objects.
+    Create Vehicle object made up of stage objects.
 
     Args:
         stages (list): List of stages [stage1,stage2,...]
@@ -240,3 +288,16 @@ class Vehicle:
         T = transformationMatrix(self.RF,self.parentRF) # transformationMatrix self.RF -> self.parentRF
         position = self.getPosition() + np.dot(T,dCoM)
         self.setPosition(position)
+
+class System:
+    """
+    System object for simulating full systems of Body and Vehicle objects.
+
+    Args:
+        bodies (list): List of bodies with parent-child structure i.e.
+                       [Sun, [Earth, Moon]].
+        vehicles (list): List of vehicles with parent-child structure same shape
+                         as bodies i.e. [nan, [ISS]] or [nan, [nan, CM]]
+    """
+    def __init__(self, bodies):
+        self.bodies = bodies

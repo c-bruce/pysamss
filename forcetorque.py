@@ -5,7 +5,7 @@
 import numpy as np
 from helpermath import transformationMatrix
 
-def gravity(obj1,obj2):
+def gravity(obj1, obj2):
     """
     Calculate gravityForce acting on an obj2 (body or vehicle.
 
@@ -26,7 +26,7 @@ def gravity(obj1,obj2):
     gravityForce = F * (obj1Position - obj2Position) / np.linalg.norm(obj1Position - obj2Position)
     return gravityForce
 
-def thrust(body,vehicle,m_dot,Isp,d,dt):
+def thrust(body, vehicle, m_dot, Isp, d, dt):
     """
     Calculate bodyRF forceThrust and torqueThrust due to fuel burn acting on vehicle.
 
