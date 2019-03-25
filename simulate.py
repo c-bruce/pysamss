@@ -4,23 +4,22 @@
 
 import numpy as np
 
-def simulate(obj, objRF, scheme, dt):
+def simulate(obj, scheme, dt):
     """
     Simulate body/vehicle using a given integration scheme.
 
     Args:
-        obj (object): Object to simulate (body or vehicle)
-        objRF (object): Reference frame object belonging to obj
-        scheme (function): Integration scheme {euler}
-        dt (float): Time step
+        obj (object): Object to simulate (body or vehicle).
+        scheme (function): Integration scheme i.e. euler.
+        dt (float): Time step.
 
     Returns:
-        state1 (list): Updated state vector
+        state1 (list): Updated state vector.
 
     Notes:
-        state_dot = [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, phi_d, theta_d, psi_d]
-        state = [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
-        U = [Fx, Fy, Fz, Mx, My, Mz]
+        state_d = [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, phi_d, theta_d, psi_d].
+        state = [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        U = [Fx, Fy, Fz, Mx, My, Mz].
     """
     state0 = obj.getState()
     U = obj.getU()
@@ -55,14 +54,25 @@ def simulate(obj, objRF, scheme, dt):
                   [0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0]])
 
-    state_dot = np.dot(A,state0) + np.dot(B,U)
+    state_d = np.dot(A, state0) + np.dot(B, U)
 
-    state1 = scheme(state0,state_dot,dt)
+    state1 = scheme(state0, state_d, dt)
     obj.appendState(state1)
-    objRF.rotate(state1[11])
-    obj.setRF(objRF)
+    #objRF.rotate(state1[11])
+    #obj.setRF(objRF)
 
 # Integration schemes
-def euler(state0,state_dot,dt):
-    state1 = state0 + state_dot*dt
+def euler(state0, state_d, dt):
+    """
+    Perform Euler integration.
+
+    Args:
+        state0 (list): Objects initial state vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        state_d (list): Objects state derivative vector [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, phi_d, theta_d, psi_d].
+        dt (float): Timestep (s).
+
+    Returns:
+        state1 (list): Updated state vector after time dt [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+    """
+    state1 = state0 + state_d * dt
     return state1

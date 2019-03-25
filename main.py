@@ -3,7 +3,7 @@
 # Python package for simulating space vehicles from launch to orbit. Main module.
 
 import numpy as np
-from helpermath import transformationMatrix
+from helpermath import transformationMatrix, rotateVector
 
 class ReferenceFrame:
     """
@@ -44,47 +44,30 @@ class ReferenceFrame3D:
         Rotate ReferenceFrame about x (phi), y (theta) and z (psi).
 
         Args:
-            phi (float): Angle to rotate about in x [rads].
-            theta (float): Angle to rotate about in y [rads].
-            psi (float): Angle to rotate about in z [rads].
+            phi (float): Angle to rotate about in x (rad).
+            theta (float): Angle to rotate about in y (rad).
+            psi (float): Angle to rotate about in z (rad).
         """
         i = np.array([1, 0, 0])
         j = np.array([0, 1, 0])
         k = np.array([0, 0, 1])
 
-        Rx = np.array([[1, 0, 0],
-                       [0, np.cos(phi), -np.sin(phi)],
-                       [0, np.sin(phi), np.cos(phi)]])
-
-        Ry = np.array([[np.cos(theta), 0, np.sin(theta)],
-                       [0, 1, 0],
-                       [-np.sin(theta), 0, np.cos(theta)]])
-
-        Rz = np.array([[np.cos(psi), -np.sin(psi), 0],
-                       [np.sin(psi), np.cos(psi), 0],
-                       [0, 0, 1]])
-
-        R = np.matmul(Rz,np.matmul(Ry,Rx))
-        '''
-        R = np.array([[np.cos(psi)*np.cos(theta), np.cos(psi)*np.sin(theta)*np.sin(phi) - np.sin(psi)*np.cos(phi), np.cos(psi)*np.sin(theta)*np.cos(phi) + np.sin(psi)*np.sin(phi)],
-                      [np.sin(psi)*np.cos(theta), np.sin(psi)*np.sin(theta)*np.sin(phi) + np.cos(psi)*np.cos(phi), np.sin(psi)*np.sin(theta)*np.cos(phi) - np.cos(psi)*np.sin(phi)],
-                      [-np.sin(theta), np.cos(theta)*np.sin(phi), np.cos(theta)*np.cos(phi)]])
-        '''
-        self.i = np.dot(Rx,i)
-        self.j = np.dot(Ry,j)
-        self.k = np.dot(Rz,k)
+        self.i = rotateVector(phi, theta, psi, i)
+        self.j = rotateVector(phi, theta, psi, j)
+        self.k = rotateVector(phi, theta, psi, k)
 
 class Body:
     """
     Create Body object
 
     Args:
-        mass (float): Body mass (kg)
-        radius (float): Body radius (m)
-        state (list): Body state [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
-        bodyRF (obj): Body referenceFrame
+        mass (float): Body mass (kg).
+        radius (float): Body radius (m).
+        state (list): Body state [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        parent (Body): Parent Body object.
+        #RF (obj): Body referenceFrame.
     """
-    def __init__(self, mass, radius, state, RF):
+    def __init__(self, mass, radius, state, parent=None):
         self.mass = mass
         self.radius = radius
         self.state = [state]
@@ -92,9 +75,20 @@ class Body:
         self.Ix = (2 / 5) * mass * radius**2
         self.Iy = (2 / 5) * mass * radius**2
         self.Iz = (2 / 5) * mass * radius**2
-        self.RF = RF
+        if parent == None: # If there is no parent the body's observerRF is the univeralRF
+            observerRF = ReferenceFrame3D()
+            bodyRF = ReferenceFrame3D()
+            bodyRF.rotate(self.getPhi(), self.getTheta(), self.getPsi())
+            self.observerRF = observerRF
+            self.bodyRF = bodyRF
+        else: # Else the body's observerRF is the parents bodyRF
+            observerRF = parent.getBodyRF()
+            bodyRF = parent.getBodyRF()
+            bodyRF.rotate(self.getPhi(), self.getTheta(), self.getPsi())
+            self.observerRF = observerRF
+            self.bodyRF = bodyRF
 
-    ### GET METHODS ###
+    # GET METHODS #
     def getMass(self):
         return self.mass
 
@@ -102,8 +96,40 @@ class Body:
         return self.radius
 
     def getState(self):
-        state = self.state[-1]
-        return state
+        """ Get current state vector. """
+        return self.state[-1]
+
+    def getVelocity(self):
+        velocity = np.array([self.state[-1][0], self.state[-1][1], self.state[-1][2]])
+        return velocity
+
+    def getPosition(self):
+        position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
+        return position
+
+    def getPhi_d(self):
+        phi_d = self.state[-1][6]
+        return phi_d
+
+    def getTheta_d(self):
+        theta_d = self.state[-1][7]
+        return theta_d
+
+    def getPsi_d(self):
+        psi_d = self.state[-1][8]
+        return psi_d
+
+    def getPhi(self):
+        phi = self.state[-1][9]
+        return phi
+
+    def getTheta(self):
+        theta = self.state[-1][10]
+        return theta
+
+    def getPsi(self):
+        psi = self.state[-1][11]
+        return psi
 
     def getU(self):
         U = np.array(self.U[-1])
@@ -118,26 +144,52 @@ class Body:
     def getIz(self):
         return self.Iz
 
-    def getRF(self):
-        RF = self.RF
-        return RF
+    def getObserverRF(self):
+        return self.observerRF
 
-    def getPosition(self):
-        position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
-        return position
+    def getBodyRF(self):
+        return self.bodyRF
 
-    ### SET METHODS ###
+    # SET METHODS #
     def setState(self, state):
+        """
+        Set current state vector.
+
+        Args:
+            state (list): State vector to set.
+        """
         self.state[-1] = state
 
-    def setRF(self, RF):
-        self.RF = RF
-
+    # APPEND METHODS #
     def appendState(self, state):
+        """
+        Append state vector.
+
+        Args:
+            state (list): State vector to append.
+        """
         self.state.append(state)
 
-    def appendU(self,U):
+    def appendU(self, U):
+        """
+        Append U vector.
+
+        Args:
+            U (list): U vector to append.
+        """
         self.U.append(U)
+
+    # ADD METHODS #
+    def addForce(self, force):
+        """
+        Add force to the current U vector.
+
+        Args:
+            force (list): Force vector to add to U vector.
+        """
+        self.U[-1][0] += force[0]
+        self.U[-1][1] += force[1]
+        self.U[-1][2] += force[2]
 
 class Stage:
     """
@@ -151,7 +203,7 @@ class Stage:
 
     Note:
         - Stage objects are assumed cylindrical with CoT 0.5*length aft of position.
-        - drymass = 0.05*mass, wetmass = 0.95*mass
+        - drymass = 0.05*mass, wetmass = 0.95*mass.
     """
     def __init__(self,mass,radius,length,position):
         self.mass = mass
@@ -166,10 +218,10 @@ class Vehicle:
     Create Vehicle object made up of stage objects.
 
     Args:
-        stages (list): List of stages [stage1,stage2,...]
-        state (list): Vehicle state [u,v,x,y,phidot,phi]
-        RF (obj): Vehicle body referenceFrame
-        parentRF (obj): Vehicle parent referenceFrame
+        stages (list): List of stages [stage1,stage2,...].
+        state (list): Vehicle state [u,v,x,y,phidot,phi].
+        RF (obj): Vehicle body referenceFrame.
+        parentRF (obj): Vehicle parent referenceFrame.
     """
     def __init__(self,stages,state,RF,parentRF):
         self.stages = stages
@@ -294,10 +346,16 @@ class System:
     System object for simulating full systems of Body and Vehicle objects.
 
     Args:
-        bodies (list): List of bodies with parent-child structure i.e.
-                       [Sun, [Earth, Moon]].
-        vehicles (list): List of vehicles with parent-child structure same shape
-                         as bodies i.e. [nan, [ISS]] or [nan, [nan, CM]]
+        bodies (list): List of bodies in system i.e. [Sun, Earth, Moon].
+        vehicles (list): List of vehicles in system i.e. [ISS, Falon9].
     """
     def __init__(self, bodies):
         self.bodies = bodies
+
+    def getForceTorque(self):
+        """
+        Get forces and torques acting on all bodies and vehicles. Sets U vector
+        for all bodies and vehicles.
+        """
+
+    def simulate(self, scheme, dt, endtime):
