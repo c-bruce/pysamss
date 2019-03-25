@@ -34,14 +34,12 @@ def transformationMatrix3D(referenceFrame1, referenceFrame2):
     Returns:
         T (np.array): Transformation matrix to convert from referenceFrame1 to referenceFrame2
     """
-    i = referenceFrame1.i
-    j = referenceFrame1.j
-    k = referenceFrame1.k
-    i_d = referenceFrame2.i
-    j_d = referenceFrame2.j
-    k_d = referenceFrame2.k
+    i, j, k = referenceFrame1.getIJK()
+    
+    i_d, j_d, k_d = referenceFrame2.getIJK()
+
     T = np.array([[np.dot(i,i_d), np.dot(j,i_d), np.dot(k,i_d)],
-                  [np.dot(i,j_d), np.dot(j,j_d), np.dot(k,j_d)]
+                  [np.dot(i,j_d), np.dot(j,j_d), np.dot(k,j_d)],
                   [np.dot(i,k_d), np.dot(j,k_d), np.dot(k,k_d)]])
     return T
 
@@ -71,11 +69,6 @@ def rotateVector(phi, theta, psi, vector):
                    [0, 0, 1]])
 
     R = np.matmul(Rz, np.matmul(Ry, Rx))
-    '''
-    R = np.array([[np.cos(psi)*np.cos(theta), np.cos(psi)*np.sin(theta)*np.sin(phi) - np.sin(psi)*np.cos(phi), np.cos(psi)*np.sin(theta)*np.cos(phi) + np.sin(psi)*np.sin(phi)],
-                  [np.sin(psi)*np.cos(theta), np.sin(psi)*np.sin(theta)*np.sin(phi) + np.cos(psi)*np.cos(phi), np.sin(psi)*np.sin(theta)*np.cos(phi) - np.cos(psi)*np.sin(phi)],
-                  [-np.sin(theta), np.cos(theta)*np.sin(phi), np.cos(theta)*np.cos(phi)]])
-    '''
-    rotatedVector = np.dot(R, vector)
 
+    rotateVector = np.dot(R, vector)
     return rotateVector
