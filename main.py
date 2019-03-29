@@ -4,6 +4,7 @@
 
 from mayavi import mlab
 import numpy as np
+import copy
 from helpermath import transformationMatrix3D, rotateVector
 
 class ReferenceFrame:
@@ -28,12 +29,7 @@ class ReferenceFrame:
 
 class ReferenceFrame3D:
     """
-    Create ReferenceFrame object.
-
-    Note:
-        - Initial self.i = np.array([1, 0, 0])
-        - Initial self.j = np.array([0, 1, 0])
-        - Initial self.k = np.array([0, 0, 1])
+    ReferenceFrame class.
     """
     def __init__(self):
         self.i = np.array([1, 0, 0])
@@ -52,13 +48,21 @@ class ReferenceFrame3D:
         i = rotateVector(phi, theta, psi, self.i)
         j = rotateVector(phi, theta, psi, self.j)
         k = rotateVector(phi, theta, psi, self.k)
-
         self.setIJK(i, j, k)
 
     def getIJK(self):
+        """ Get i, j and k vectors. """
         return self.i, self.j, self.k
 
     def setIJK(self, i, j, k):
+        """
+        Set i, j and k vectors in universalRF.
+
+        Args:
+            i (np.array): Numpy array i vector i.e. np.array([1, 0, 0])
+            j (np.array): Numpy array j vector i.e. np.array([0, 1, 0])
+            k (np.array): Numpy array k vector i.e. np.array([0, 0, 1])
+        """
         self.i = i
         self.j = j
         self.k = k
@@ -77,15 +81,15 @@ class ReferenceFrame3D:
         mlab.quiver3d(origin[0], origin[1], origin[2], self.j[0], self.j[1], self.j[2], scale_factor=scale_factor, color=(0, 1, 0), figure=figure)
         mlab.quiver3d(origin[0], origin[1], origin[2], self.k[0], self.k[1], self.k[2], scale_factor=scale_factor, color=(0, 0, 1), figure=figure)
 
-class Body:
+class CelestialBody:
     """
-    Create Body object
+    CelestialBody class.
 
     Args:
         mass (float): Body mass (kg).
         radius (float): Body radius (m).
         state (list): Body state [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
-        parent (Body): Parent Body object.
+        observerRF (ReferenceFrame3D): Observer reference frame of object.
     """
     def __init__(self, mass, radius, state=None, parent=None):
         self.mass = mass
@@ -106,16 +110,24 @@ class Body:
             self.bodyRF = bodyRF
             self.parent = None
         else: # Else the body's observerRF is the parents bodyRF
-            observerRF = parent.getBodyRF()
-            bodyRF = parent.getBodyRF()
+            observerRF = copy.copy(parent.getBodyRF())
+            bodyRF = copy.copy(parent.getBodyRF())
             bodyRF.rotate(self.getPhi(), self.getTheta(), self.getPsi())
             self.observerRF = observerRF
             self.bodyRF = bodyRF
             self.parent = parent
 
-    # GET METHODS #
     def getMass(self):
         return self.mass
+
+    def getIx(self):
+        return self.Ix
+
+    def getIy(self):
+        return self.Iy
+
+    def getIz(self):
+        return self.Iz
 
     def getRadius(self):
         return self.radius
@@ -123,6 +135,24 @@ class Body:
     def getState(self):
         """ Get current state vector. """
         return self.state[-1]
+
+    def setState(self, state):
+        """
+        Set current state vector.
+
+        Args:
+            state (list): State vector to set.
+        """
+        self.state[-1] = state
+
+    def appendState(self, state):
+        """
+        Append state vector.
+
+        Args:
+            state (list): State vector to append.
+        """
+        self.state.append(state)
 
     def getVelocity(self, local=None):
         """
@@ -148,6 +178,26 @@ class Body:
             velocity = np.array([self.state[-1][0], self.state[-1][1], self.state[-1][2]])
         return velocity
 
+    def setVelocity(self, velocity, local=None):
+        """
+        Set current velocity vector.
+
+        Args:
+            velocity (list): Position vector to set.
+            local (bool): If true velocity is relative to parentRF. Else
+                          velocity is relative to universalRF.
+        """
+        if local == True: # Convert local velocity to universal velocity
+            chain = self.getParentChain()
+            for i in range(0, len(chain) - 1):
+                body1 = chain[i]
+                body2 = chain[i+1]
+                T = transformationMatrix3D(body1.getBodyRF(), body2.getBodyRF())
+                velocity = np.dot(T, velocity + np.array(body1.getVelocity(local=True))) # Transform velocity from body1RF to body2RF
+            self.state[-1][0:3] = velocity
+        else:
+            self.state[-1][0:3] = velocity
+
     def getPosition(self, local=None):
         """
         Get current position vector.
@@ -171,6 +221,26 @@ class Body:
         else:
             position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
         return position
+
+    def setPosition(self, position, local=None):
+        """
+        Set current position vector.
+
+        Args:
+            position (list): Position vector to set.
+            local (bool): If true position is relative to parentRF. Else
+                          position is relative to universalRF.
+        """
+        if local == True:
+            chain = self.getParentChain() # Go from localRF to universalRF
+            for i in range(0, len(chain) - 1):
+                body1 = chain[i]
+                body2 = chain[i+1]
+                T = transformationMatrix3D(body1.getBodyRF(), body2.getBodyRF())
+                position = np.dot(T, position) + np.array(body1.getPosition(local=True)) # Transform position from body1RF to body2RF
+            self.state[-1][3:5] = position
+        else:
+            self.state[-1][3:5] = position
 
     def getPhi_d(self):
         phi_d = self.state[-1][6]
@@ -200,14 +270,14 @@ class Body:
         U = np.array(self.U[-1])
         return U
 
-    def getIx(self):
-        return self.Ix
+    def appendU(self, U):
+        """
+        Append U vector.
 
-    def getIy(self):
-        return self.Iy
-
-    def getIz(self):
-        return self.Iz
+        Args:
+            U (list): U vector to append.
+        """
+        self.U.append(U)
 
     def getParent(self):
         return self.parent
@@ -233,86 +303,16 @@ class Body:
     def getBodyRF(self):
         return self.bodyRF
 
-    # SET METHODS #
-    def setState(self, state):
+    def rotateBodyRF(self, phi, theta, psi):
         """
-        Set current state vector.
+        Rotate bodyRF about x (phi), y (theta) and z (psi).
 
         Args:
-            state (list): State vector to set.
+            phi (float): Angle to rotate about in x (rad).
+            theta (float): Angle to rotate about in y (rad).
+            psi (float): Angle to rotate about in z (rad).
         """
-        self.state[-1] = state
-
-    def setPosition(self, position, local=None):
-        """
-        Set current position vector.
-
-        Args:
-            position (list): Position vector to set.
-            local (bool): If true position is relative to parentRF. Else
-                          position is relative to universalRF.
-        """
-        if local == True:
-            chain = self.getParentChain() # Go from localRF to universalRF
-            for i in range(0, len(chain) - 1):
-                body1 = chain[i]
-                body2 = chain[i+1]
-                T = transformationMatrix3D(body1.getBodyRF(), body2.getBodyRF())
-                position = np.dot(T, position) + np.array(body1.getPosition(local=True)) # Transform position from body1RF to body2RF
-            self.state[-1][3:5] = position
-        else:
-            self.state[-1][3:5] = position
-
-    def setVelocity(self, velocity, local=None):
-        """
-        Set current velocity vector.
-
-        Args:
-            velocity (list): Position vector to set.
-            local (bool): If true velocity is relative to parentRF. Else
-                          velocity is relative to universalRF.
-        """
-        if local == True: # Convert local velocity to universal velocity
-            chain = self.getParentChain()
-            for i in range(0, len(chain) - 1):
-                body1 = chain[i]
-                body2 = chain[i+1]
-                T = transformationMatrix3D(body1.getBodyRF(), body2.getBodyRF())
-                velocity = np.dot(T, velocity + np.array(body1.getVelocity(local=True))) # Transform velocity from body1RF to body2RF
-            self.state[-1][0:3] = velocity
-        else:
-            self.state[-1][0:3] = velocity
-
-    # APPEND METHODS #
-    def appendState(self, state):
-        """
-        Append state vector.
-
-        Args:
-            state (list): State vector to append.
-        """
-        self.state.append(state)
-
-    def appendU(self, U):
-        """
-        Append U vector.
-
-        Args:
-            U (list): U vector to append.
-        """
-        self.U.append(U)
-
-    # ADD METHODS #
-    def addForce(self, force):
-        """
-        Add force to the current U vector.
-
-        Args:
-            force (list): Force vector to add to U vector.
-        """
-        self.U[-1][0] += force[0]
-        self.U[-1][1] += force[1]
-        self.U[-1][2] += force[2]
+        self.bodyRF.rotate(phi, theta, psi)
 
 class Stage:
     """

@@ -5,17 +5,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
-from main import ReferenceFrame, Body, Stage, Vehicle
+from main import ReferenceFrame, CelestialBody, Stage, Vehicle
 from forcetorque import gravity, thrust
 from simulate import simulate, euler
 
 startTime = time()
 
 # Define Earth
-earth = Body(5.972e24, 6.371e6, [0,0,0,0,0,0,0,0,0,0,0,0])
+earth = CelestialBody(5.972e24, 6.371e6, [0,0,0,0,0,0,0,0,0,0,0,0])
 
 # Define Moon
-moon = Body(7.348e22, 1.737e6, [0,1022,0,3.84402e8,0,0,0,0,0,0,0,0], earth)
+moon = CelestialBody(7.348e22, 1.737e6, [0,1022,0,3.84402e8,0,0,0,0,0,0,0,0], earth)
 
 # earth, moon Initial Forces
 gravityForce = gravity(earth, moon)
