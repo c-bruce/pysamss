@@ -11,9 +11,9 @@ To do:
 - Improve Iz calculation for vehicles
 - Full doc strings for classes and methods
 - Aerodynamics module to simulate atmospheric effects
-- Full 6dof capabilities with multiple bodies for simulation of Earth - Moon transfers for example
+- Full 6dof capabilities with multiple bodies for simulation of Earth - Moon transfers for example [STARTED]
 - Plotting helper functions
-- Add System class and implement method of simulating full system (i.e. not needing to simulate individual objects)
+- Add System class and implement method of simulating full system (i.e. not needing to simulate individual objects) [STARTED]
 - Implement getForceTorque() functions on body and vehicle objects
 
 Complete:

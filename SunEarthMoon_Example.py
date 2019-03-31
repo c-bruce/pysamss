@@ -5,19 +5,27 @@
 import numpy as np
 from mayavi import mlab
 from main import CelestialBody
+from simulate import simulate, euler
 
 Sun = CelestialBody(1.9885e30, 696342e3)
 Earth = CelestialBody(5.972e24, 6.371e6, parent=Sun)
-Earth.setPosition([150e9, 0, 0], local=True)
-Earth.setVelocity([10, 0, 0], local=True)
+Earth.setPosition([1, 0, 0], local=True)
+#Earth.setPosition([150e9, 0, 0], local=True)
+#Earth.setVelocity([10, 0, 0], local=True)
 Earth.rotateBodyRF(np.deg2rad(23), 0, 0)
-Moon = CelestialBody(0.1, 0.1, parent=Earth)
-Moon.setPosition([0, 3.84402e8, 0], local=True)
-Moon.setVelocity([0, 10, 0], local=True)
+Moon = CelestialBody(7.348e22, 1.737e6, parent=Earth)
+Moon.setPosition([0, 1, 0], local=True)
+#Moon.setPosition([0, 3.84402e8, 0], local=True)
+#Moon.setVelocity([0, 10, 0], local=True)
 
 figure = mlab.figure(size=(600, 600))
 
-Sun.bodyRF.plot(figure, Sun.getPosition(), scale_factor=1e9)
-Earth.bodyRF.plot(figure, Earth.getPosition(), scale_factor=1e9)
-Moon.bodyRF.plot(figure, Moon.getPosition(), scale_factor=1e9)
-#MoonMoon.bodyRF.plot(figure, MoonMoon.getPosition())
+scale_factor = 1
+Sun.bodyRF.plot(figure, Sun.getPosition(), scale_factor=scale_factor)
+Earth.bodyRF.plot(figure, Earth.getPosition(), scale_factor=scale_factor)
+Moon.bodyRF.plot(figure, Moon.getPosition(), scale_factor=scale_factor)
+
+### Simulate a single second for a rotating moon and plot updated Moon.bodyRF
+Moon.setAttitudeDot([np.deg2rad(0), np.deg2rad(10), np.deg2rad(0)], local=True)
+simulate(Moon, euler, 1)
+Moon.bodyRF.plot(figure, Moon.getPosition(), scale_factor=0.5)

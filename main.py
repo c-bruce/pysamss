@@ -98,24 +98,25 @@ class CelestialBody:
             self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
         else:
             self.state = [state]
-        self.U = [] # [Fx, Fy, Fz, Mx, My, Mz] BodyRF
+        self.U = [[0, 0, 0, 0, 0, 0]] # [Fx, Fy, Fz, Mx, My, Mz]
         self.Ix = (2 / 5) * mass * radius**2
         self.Iy = (2 / 5) * mass * radius**2
         self.Iz = (2 / 5) * mass * radius**2
         if parent == None: # If there is no parent the body's observerRF is the univeralRF
             observerRF = ReferenceFrame3D()
             bodyRF = ReferenceFrame3D()
-            bodyRF.rotate(self.getPhi(), self.getTheta(), self.getPsi())
+            bodyRF.rotate(self.state[0][9], self.state[0][10], self.state[0][11])
             self.observerRF = observerRF
             self.bodyRF = bodyRF
             self.parent = None
         else: # Else the body's observerRF is the parents bodyRF
-            observerRF = copy.copy(parent.getBodyRF())
+            observerRF = parent.getBodyRF() #copy.copy(parent.getBodyRF())
             bodyRF = copy.copy(parent.getBodyRF())
-            bodyRF.rotate(self.getPhi(), self.getTheta(), self.getPsi())
+            bodyRF.rotate(self.state[0][9], self.state[0][10], self.state[0][11])
             self.observerRF = observerRF
             self.bodyRF = bodyRF
             self.parent = parent
+        self.I = self.setI()
 
     def getMass(self):
         return self.mass
@@ -128,6 +129,17 @@ class CelestialBody:
 
     def getIz(self):
         return self.Iz
+
+    def getI(self):
+        return self.I
+
+    def setI(self):
+        I = np.array([[(2 / 5) * self.mass * self.radius**2, 0, 0],
+                      [0, (2 / 5) * self.mass *  self.radius**2, 0],
+                      [0, 0, (2 / 5) * self.mass *  self.radius**2]])
+        T = transformationMatrix3D(self.getBodyRF(), ReferenceFrame3D())
+        I = np.matmul(T, np.matmul(I, T.T)) # I' = TIT.T
+        return I
 
     def getRadius(self):
         return self.radius
@@ -163,9 +175,10 @@ class CelestialBody:
                           velocity is relative to universalRF.
 
         Returns:
-            velocity (np.array): Local/universal velocity vector.
+            velocity (np.array): Local/universal velocity vector [u, v, w].
         """
-        if local == True:
+        if local == True: # Convert universal velocity to local velocity
+            '''
             velocity = self.getVelocity() # Velocity in universalRF
             chain = self.getParentChain()
             chain = list(reversed(chain)) # Reverse chain to go from universalRF to localRF
@@ -174,6 +187,9 @@ class CelestialBody:
                 body2 = chain[i+1]
                 T = transformationMatrix3D(body1.getBodyRF(), body2.getBodyRF())
                 velocity = np.dot(T, velocity - body2.getVelocity(local=True))
+            '''
+            T = transformationMatrix3D(ReferenceFrame3D(), self.parent.getBodyRF()) # Transform from universalRF to parentRF
+            velocity = np.dot(T, self.getVelocity() - self.parent.getVelocity())
         else:
             velocity = np.array([self.state[-1][0], self.state[-1][1], self.state[-1][2]])
         return velocity
@@ -183,17 +199,21 @@ class CelestialBody:
         Set current velocity vector.
 
         Args:
-            velocity (list): Position vector to set.
+            velocity (list): Velocity vector to set [u, v, w].
             local (bool): If true velocity is relative to parentRF. Else
                           velocity is relative to universalRF.
         """
         if local == True: # Convert local velocity to universal velocity
+            '''
             chain = self.getParentChain()
             for i in range(0, len(chain) - 1):
                 body1 = chain[i]
                 body2 = chain[i+1]
                 T = transformationMatrix3D(body1.getBodyRF(), body2.getBodyRF())
                 velocity = np.dot(T, velocity + np.array(body1.getVelocity(local=True))) # Transform velocity from body1RF to body2RF
+            '''
+            T = transformationMatrix3D(self.parent.getBodyRF(), ReferenceFrame3D()) # Transform from parentRF to universalRF
+            velocity = np.dot(T, velocity) + self.parent.getVelocity()
             self.state[-1][0:3] = velocity
         else:
             self.state[-1][0:3] = velocity
@@ -207,9 +227,10 @@ class CelestialBody:
                           position is relative to universalRF.
 
         Returns:
-            position (np.array): Local/universal position vector.
+            position (np.array): Local/universal position vector [x, y, z].
         """
-        if local == True:
+        if local == True: # Convert universal position to local position
+            '''
             position = self.getPosition() # Position in universalRF
             chain = self.getParentChain()
             chain = list(reversed(chain)) # Reverse chain to go from universalRF to localRF
@@ -218,6 +239,9 @@ class CelestialBody:
                 body2 = chain[i+1]
                 T = transformationMatrix3D(body1.getBodyRF(), body2.getBodyRF())
                 position = np.dot(T, position - body2.getPosition(local=True))
+            '''
+            T = transformationMatrix3D(ReferenceFrame3D(), self.parent.getBodyRF()) # Transform from universalRF to parentRF
+            position = np.dot(T, self.getPosition() - self.parent.getPosition())
         else:
             position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
         return position
@@ -227,44 +251,68 @@ class CelestialBody:
         Set current position vector.
 
         Args:
-            position (list): Position vector to set.
+            position (list): Position vector to set [x, y, z].
             local (bool): If true position is relative to parentRF. Else
                           position is relative to universalRF.
         """
-        if local == True:
+        if local == True: # Convert local position to universal position
+            '''
             chain = self.getParentChain() # Go from localRF to universalRF
             for i in range(0, len(chain) - 1):
                 body1 = chain[i]
                 body2 = chain[i+1]
                 T = transformationMatrix3D(body1.getBodyRF(), body2.getBodyRF())
                 position = np.dot(T, position) + np.array(body1.getPosition(local=True)) # Transform position from body1RF to body2RF
-            self.state[-1][3:5] = position
+            '''
+            T = transformationMatrix3D(self.parent.getBodyRF(), ReferenceFrame3D()) # Transform from parentRF to universalRF
+            position = np.dot(T, position) + self.parent.getPosition()
+            self.state[-1][3:6] = position
         else:
-            self.state[-1][3:5] = position
+            self.state[-1][3:6] = position
 
-    def getPhi_d(self):
-        phi_d = self.state[-1][6]
-        return phi_d
+    def getAttitudeDot(self, local=None):
+        """
+        Get current attitude_dot vector.
 
-    def getTheta_d(self):
-        theta_d = self.state[-1][7]
-        return theta_d
+        Args:
+            local (bool): If true attitude_dot is relative to parentRF. Else
+                          attitude_dot is relative to universalRF.
 
-    def getPsi_d(self):
-        psi_d = self.state[-1][8]
-        return psi_d
+        Returns:
+            attitude_dot (np.array): Local/universal attitude_dot vector [phi_d, theta_d, psi_d].
+        """
+        if local == True: # Convert universal attitude_dot to local attitude_dot
+            T = transformationMatrix3D(ReferenceFrame3D(), self.parent.getBodyRF()) # Transform from universalRF to parentRF
+            attitude_dot = np.dot(T, self.getAttitudeDot() - self.parent.getAttitudeDot())
+        else:
+            attitude_dot = np.array([self.state[-1][6], self.state[-1][7], self.state[-1][8]])
+        return attitude_dot
 
-    def getPhi(self):
-        phi = self.state[-1][9]
-        return phi
+    def setAttitudeDot(self, attitude_dot, local=None):
+        """
+        Set current attitude_dot vector.
 
-    def getTheta(self):
-        theta = self.state[-1][10]
-        return theta
+        Args:
+            attitude_dot (list): AttitudeDot vector to set [phi_d, theta_d, psi_d].
+            local (bool): If true attitude_dot is relative to parentRF. Else
+                          attitude_dot is relative to universalRF.
+        """
+        if local == True: # Convert local position to universal position
+            T = transformationMatrix3D(self.parent.getBodyRF(), ReferenceFrame3D()) # Transform from parentRF to universalRF
+            attitude_dot = np.dot(T, attitude_dot) + self.parent.getAttitudeDot()
+            self.state[-1][6:9] = attitude_dot
+        else:
+            self.state[-1][6:9] = attitude_dot
 
-    def getPsi(self):
-        psi = self.state[-1][11]
-        return psi
+    def getAttitude(self, local=None): ### NEED TO CHECK - POSSIBLY UPDATE TO WORK IN QUATERNIONS
+        """
+        Get current attitude vector.
+        """
+
+    def setAttitude(self, attitude, local=None):  ### NEED TO CHECK - POSSIBLY UPDATE TO WORK IN QUATERNIONS
+        """
+        Set current attitude vector.
+        """
 
     def getU(self):
         U = np.array(self.U[-1])
