@@ -24,9 +24,7 @@ def simulate(obj, scheme, dt):
     state0 = obj.getState()
     U = obj.getU()
     m = obj.getMass()
-    Ix = obj.getIx()
-    Iy = obj.getIy()
-    Iz = obj.getIz()
+    I = obj.getI()
 
     A = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # . [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -47,9 +45,9 @@ def simulate(obj, scheme, dt):
                   [0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0],
-                  [0, 0, 0, 1/Ix, 0, 0],
-                  [0, 0, 0, 0, 1/Iy, 0],
-                  [0, 0, 0, 0, 0, 1/Iz],
+                  [0, 0, 0, 1/I[0,0], 0, 0],
+                  [0, 0, 0, 0, 1/I[1,1], 0],
+                  [0, 0, 0, 0, 0, 1/I[2,2]],
                   [0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0]])
@@ -89,7 +87,8 @@ def simulate(obj, scheme, dt):
 
     state1 = scheme(state0, state_d, dt)
     obj.appendState(state1)
-    obj.rotateBodyRF(state1[6], state1[7], state1[8])
+    obj.appendU([0, 0, 0, 0, 0, 0])
+    obj.bodyRF.rotate(state1[6], state1[7], state1[8])
 
 # Integration schemes
 def euler(state0, state_d, dt):

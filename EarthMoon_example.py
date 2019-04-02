@@ -3,24 +3,27 @@
 # Earth - Moon example
 
 import numpy as np
-import matplotlib.pyplot as plt
+from mayavi import mlab
 from time import time
-from main import ReferenceFrame, CelestialBody, Stage, Vehicle
+from main import CelestialBody
 from forcetorque import gravity, thrust
 from simulate import simulate, euler
+from plotting import plotCelestialBody, plotTrajectory
 
 startTime = time()
 
 # Define Earth
-earth = CelestialBody(5.972e24, 6.371e6, [0,0,0,0,0,0,0,0,0,0,0,0])
+earth = CelestialBody(5.972e24, 6.371e6)
 
 # Define Moon
-moon = CelestialBody(7.348e22, 1.737e6, [0,1022,0,3.84402e8,0,0,0,0,0,0,0,0], earth)
+moon = CelestialBody(7.348e22, 1.737e6, parent=earth)
+moon.setPosition([3.84402e8, 0, 0])
+moon.setVelocity([0, 1022, 0])
 
 # earth, moon Initial Forces
 gravityForce = gravity(earth, moon)
-earth.appendU(list(np.append(-gravityForce, [0,0,0])))
-moon.appendU(list(np.append(gravityForce, [0,0,0])))
+earth.addForce(-gravityForce)
+moon.addForce(gravityForce)
 
 # Simulation loop
 dt = 60
@@ -37,27 +40,20 @@ for i in range(0,39312):
     # Get forces
     gravityForce = gravity(earth, moon)
 
-    # Store force
-    earth.appendU(list(np.append(-gravityForce, [0,0,0])))
-    moon.appendU(list(np.append(gravityForce, [0,0,0])))
+    # Add forces
+    earth.addForce(-gravityForce)
+    moon.addForce(gravityForce)
 
 # Plotting
-state_earth = np.array(earth.state)
-state_moon = np.array(moon.state)
-fig, ax = plt.subplots()
-ax.axis('equal')
-ax.axis([-earth.radius*100, earth.radius*100, -earth.radius*100, earth.radius*100])
+earthPositions = np.array(earth.state)[:,3:6]
+moonPositions = np.array(moon.state)[:,3:6]
 
-earthPosition = earth.getPosition()
-earthPlot = plt.Circle((earthPosition[0], earthPosition[1]), earth.radius,color='b')
-ax.add_artist(earthPlot)
-ax.plot(state_earth[:,3], state_earth[:,4], color='k', lw=0.5)
+figure = mlab.figure(size=(600, 600))
 
-moonPosition = moon.getPosition()
-moonPlot = plt.Circle((moonPosition[0], moonPosition[1]), moon.radius, color='gray')
-ax.add_artist(moonPlot)
-ax.plot(state_moon[:,3], state_moon[:,4], color='k', lw=0.5)
-plt.show()
+earthImageFile = 'plotting/earth.jpg'
+plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
+plotTrajectory(figure, earthPositions, (1, 1, 1))
 
-endTime = time()
-print(str(endTime - startTime) + ' Seconds')
+moonImageFile = 'plotting/moon.jpg'
+plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
+plotTrajectory(figure, moonPositions, (1, 1, 1))
