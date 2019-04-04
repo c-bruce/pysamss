@@ -5,29 +5,9 @@
 from mayavi import mlab
 import numpy as np
 import copy
-from helpermath import transformationMatrix3D, rotateVector
+from helpermath import referenceFrames2rotationMatrix, euler2rotationMatrix
 
 class ReferenceFrame:
-    """
-    Create ReferenceFrame object.
-
-    Note:
-        - Initial self.i = np.array([1,0])
-        - Initial self.j = np.array([0,1])
-    """
-    def __init__(self):
-        self.i = np.array([1,0])
-        self.j = np.array([0,1])
-
-    def rotate(self,theta):
-        i = np.array([1,0])
-        j = np.array([0,1])
-        R = np.array([[np.cos(theta), -np.sin(theta)],
-                      [np.sin(theta), np.cos(theta)]])
-        self.i = np.dot(R,i)
-        self.j = np.dot(R,j)
-
-class ReferenceFrame3D:
     """
     ReferenceFrame class.
     """
@@ -45,9 +25,10 @@ class ReferenceFrame3D:
             theta (float): Angle to rotate about in y (rad).
             psi (float): Angle to rotate about in z (rad).
         """
-        i = rotateVector(phi, theta, psi, self.i)
-        j = rotateVector(phi, theta, psi, self.j)
-        k = rotateVector(phi, theta, psi, self.k)
+        R = euler2rotationMatrix(phi, theta, psi)
+        i = np.dot(R, self.i)
+        j = np.dot(R, self.j)
+        k = np.dot(R, self.k)
         self.setIJK(i, j, k)
 
     def getIJK(self):
@@ -81,46 +62,14 @@ class ReferenceFrame3D:
         mlab.quiver3d(origin[0], origin[1], origin[2], self.j[0], self.j[1], self.j[2], scale_factor=scale_factor, color=(0, 1, 0), figure=figure)
         mlab.quiver3d(origin[0], origin[1], origin[2], self.k[0], self.k[1], self.k[2], scale_factor=scale_factor, color=(0, 0, 1), figure=figure)
 
-class CelestialBody:
+class RigidBody:
     """
-    CelestialBody class.
+    RigidBody class.
 
-    Args:
-        mass (float): Body mass (kg).
-        radius (float): Body radius (m).
-        state (list): Body state [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
-        parent (parent object): Parent object  to inherit parentRF from.
+    Note:
+        - CelestialBody and Vessel classes derive the bulk of their methods
+          from RigidBody class.
     """
-    def __init__(self, mass, radius, state=None, parent=None):
-        self.mass = mass
-        self.radius = radius
-        self.I = np.array([[(2 / 5) * mass * radius**2, 0, 0],
-                           [0, (2 / 5) * mass * radius**2, 0],
-                           [0, 0, (2 / 5) * mass * radius**2]])
-        if state == None:
-            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-        else:
-            self.state = [state]
-        self.U = [[0, 0, 0, 0, 0, 0]] # [Fx, Fy, Fz, Mx, My, Mz]
-        self.universalRF = ReferenceFrame3D()
-        if parent == None: # If there is no parent the body's observerRF is the univeralRF
-            self.parentRF = self.universalRF
-            self.bodyRF = copy.copy(self.universalRF)
-            self.parent = None
-        else: # Else the body's observerRF is the parents bodyRF
-            self.parentRF = parent.bodyRF
-            self.bodyRF = copy.copy(parent.bodyRF)
-            self.parent = parent
-
-    def getMass(self):
-        return self.mass
-
-    def getI(self):
-        return self.I
-
-    def getRadius(self):
-        return self.radius
-
     def getState(self):
         """
         Get current state vector.
@@ -164,8 +113,8 @@ class CelestialBody:
             velocity (np.array): Local/universal velocity vector.
         """
         if local == True: # Convert universal velocity to local velocity
-            T = transformationMatrix3D(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
-            velocity = np.dot(T, self.getVelocity() - self.parent.getVelocity())
+            R = referenceFrames2rotationMatrix(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
+            velocity = np.dot(R, self.getVelocity() - self.parent.getVelocity())
         else:
             velocity = np.array([self.state[-1][0], self.state[-1][1], self.state[-1][2]])
         return velocity
@@ -181,8 +130,8 @@ class CelestialBody:
                           velocity is relative to universalRF.
         """
         if local == True: # Convert local velocity to universal velocity
-            T = transformationMatrix3D(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
-            velocity = np.dot(T, velocity) + self.parent.getVelocity()
+            R = referenceFrames2rotationMatrix(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
+            velocity = np.dot(R, velocity) + self.parent.getVelocity()
         self.state[-1][0:3] = velocity
 
     def getPosition(self, local=None):
@@ -198,8 +147,8 @@ class CelestialBody:
             position (np.array): Local/universal position vector.
         """
         if local == True: # Convert universal position to local position
-            T = transformationMatrix3D(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
-            position = np.dot(T, self.getPosition() - self.parent.getPosition())
+            R = referenceFrames2rotationMatrix(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
+            position = np.dot(R, self.getPosition() - self.parent.getPosition())
         else:
             position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
         return position
@@ -215,8 +164,8 @@ class CelestialBody:
                           position is relative to universalRF.
         """
         if local == True: # Convert local position to universal position
-            T = transformationMatrix3D(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
-            position = np.dot(T, position) + self.parent.getPosition()
+            R = referenceFrames2rotationMatrix(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
+            position = np.dot(R, position) + self.parent.getPosition()
         self.state[-1][3:6] = position
 
     def getAttitudeDot(self, local=None):
@@ -232,8 +181,8 @@ class CelestialBody:
             attitude_dot (np.array): Body/universal attitude_dot vector.
         """
         if local == True: # Convert universal attitude_dot to local (bodyRF) attitude_dot
-            T = transformationMatrix3D(self.universalRF, self.bodyRF) # Transform from universalRF to bodyRF
-            attitude_dot = np.dot(T, self.getAttitudeDot())
+            R = referenceFrames2rotationMatrix(self.universalRF, self.bodyRF) # Transform from universalRF to bodyRF
+            attitude_dot = np.dot(R, self.getAttitudeDot())
         else:
             attitude_dot = np.array([self.state[-1][6], self.state[-1][7], self.state[-1][8]])
         return attitude_dot
@@ -249,8 +198,8 @@ class CelestialBody:
                           attitude_dot is relative to universalRF.
         """
         if local == True: # Convert local (bodyRF) attitude_dot to universal attitude_dot
-            T = transformationMatrix3D(self.bodyRF, self.universalRF) # Transform from bodyRF to universalRF
-            attitude_dot = np.dot(T, attitude_dot)
+            R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF) # Transform from bodyRF to universalRF
+            attitude_dot = np.dot(R, attitude_dot)
         self.state[-1][6:9] = attitude_dot
 
     def getAttitude(self, local=None): ### NEED TO CHECK - POSSIBLY UPDATE TO WORK IN QUATERNIONS
@@ -266,8 +215,8 @@ class CelestialBody:
             attitude (np.array): Body/universal attitude_dot vector.
         """
         if local == True: # Convert universal attitude to local (parentRF) attitude
-            T = transformationMatrix3D(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
-            attitude = np.dot(T, self.getAttitude()) - self.parent.getAttitude()
+            R = referenceFrames2rotationMatrix(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
+            attitude = np.dot(R, self.getAttitude()) - self.parent.getAttitude()
         else:
             attitude = np.array([self.state[-1][9], self.state[-1][10], self.state[-1][11]])
         return attitude
@@ -283,10 +232,10 @@ class CelestialBody:
                           attitude is relative to universalRF.
         """
         if local == True: # Convert local (parentRF) attitude to universal position
-            T = transformationMatrix3D(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
-            attitude = np.dot(T, attitude) + self.parent.getAttitude()
+            R = referenceFrames2rotationMatrix(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
+            attitude = np.dot(R, attitude) + self.parent.getAttitude()
         self.state[-1][9:12] = attitude
-        self.bodyRF = ReferenceFrame3D()
+        self.bodyRF = ReferenceFrame()
         self.bodyRF.rotate(attitude[0], attitude[1], attitude[2])
 
     def getU(self):
@@ -330,8 +279,8 @@ class CelestialBody:
                           universalRF before it is added to the U vector.
         """
         if local == True:
-            T = transformationMatrix3D(self.bodyRF, self.universalRF)
-            force = np.dot(T, force)
+            R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
+            force = np.dot(R, force)
         self.U[-1][0] += force[0]
         self.U[-1][1] += force[1]
         self.U[-1][2] += force[2]
@@ -347,8 +296,8 @@ class CelestialBody:
                           universalRF before it is added to the U vector.
         """
         if local == True:
-            T = transformationMatrix3D(self.bodyRF, self.universalRF)
-            torque = np.dot(T, torque)
+            R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
+            torque = np.dot(R, torque)
         self.U[-1][3] += torque[0]
         self.U[-1][4] += torque[1]
         self.U[-1][5] += torque[2]
@@ -368,27 +317,98 @@ class CelestialBody:
         chain = chain[:-1]
         return chain
 
-class Stage:
+class CelestialBody(RigidBody):
     """
-    Create Stage object.
+    CelestialBody class.
 
     Args:
-        mass (float): Stage mass (kg)
-        radius (float): Stage radius (m)
-        length (float): Stage length (m)
-        position (list): Stage position relative to referenceFrame [x,y] (m)
+        mass (float): CelestialBody mass (kg).
+        radius (float): CelestialBody radius (m).
+        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        parent (parent object): Parent object to inherit parentRF from.
+    """
+    def __init__(self, mass, radius, state=None, parent=None):
+        self.mass = mass
+        self.I = np.array([[(2 / 5) * mass * radius**2, 0, 0],
+                           [0, (2 / 5) * mass * radius**2, 0],
+                           [0, 0, (2 / 5) * mass * radius**2]])
+        self.radius = radius
+        if state == None:
+            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+        else:
+            self.state = [state]
+        self.U = [[0, 0, 0, 0, 0, 0]] # [Fx, Fy, Fz, Mx, My, Mz]
+        self.universalRF = ReferenceFrame()
+        if parent == None: # If there is no parent the body's parentRF is the univeralRF
+            self.parentRF = self.universalRF
+            self.bodyRF = copy.copy(self.universalRF)
+            self.parent = None
+        else: # Else the body's parentRF is the parents bodyRF
+            self.parentRF = parent.bodyRF
+            self.bodyRF = copy.copy(parent.bodyRF)
+            self.parent = parent
+
+    def getMass(self):
+        """ Get mass. """
+        return self.mass
+
+    def getI(self):
+        """ Get inertia matrix I. """
+        return self.I
+
+    def getRadius(self):
+        """ Get radius. """
+        return self.radius
+
+class Stage:
+    """
+    Stage class.
+
+    Args:
+        mass (float): Stage mass (kg).
+        radius (float): Stage radius (m).
+        length (float): Stage length (m).
+        position (list): Stage position relative to referenceFrame [x,y] (m).
 
     Note:
-        - Stage objects are assumed cylindrical with CoT 0.5*length aft of position.
-        - drymass = 0.05*mass, wetmass = 0.95*mass.
+        - Stage objects are assumed cylindrical with CoT 0.5 * length aft of
+          position.
+        - drymass = 0.05 * mass, wetmass = 0.95 * mass.
     """
     def __init__(self, mass, radius, length, position):
         self.mass = mass
-        self.drymass = 0.05*mass
-        self.wetmass = 0.95*mass
+        self.drymass = 0.05 * mass
+        self.wetmass = 0.95 * mass
         self.radius = radius
         self.length = length
         self.position = np.array(position)
+        self.CoT = position - (0.5 * length)
+
+class Vessel(RigidBody):
+    """
+    Vessel class.
+
+    Args:
+        stages (list): List of stages [stage1,stage2,...].
+        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        parent (parent object): Parent object to inherit parentRF from.
+    """
+    def __init__(self, stages, state=None, parent=None):
+        self.stages = stages
+        if state == None:
+            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+        else:
+            self.state = [state]
+        self.U = [[0, 0, 0, 0, 0, 0]] # [Fx, Fy, Fz, Mx, My, Mz]
+        self.universalRF = ReferenceFrame()
+        if parent == None: # If there is no parent the body's parentRF is the univeralRF
+            self.parentRF = self.universalRF
+            self.bodyRF = copy.copy(self.universalRF)
+            self.parent = None
+        else: # Else the body's parentRF is the parents bodyRF
+            self.parentRF = parent.bodyRF
+            self.bodyRF = copy.copy(parent.bodyRF)
+            self.parent = parent
 
 class Vehicle:
     """
@@ -462,7 +482,7 @@ class Vehicle:
         I = np.array([[(2 / 5) * mass * radius**2, 0, 0],
                       [0, (2 / 5) * mass * radius**2, 0],
                       [0, 0, (2 / 5) * mass *  radius**2]])
-        #T = transformationMatrix3D(self.getBodyRF(), ReferenceFrame3D())
+        #R = referenceFrames2rotationMatrix(self.getBodyRF(), ReferenceFrame())
         #I = np.dot(T, np.dot(I, T.T)) # I' = [T][I][T.T]
     '''
 
@@ -523,7 +543,7 @@ class Vehicle:
         self.CoM = moment/self.mass
         ### Iz METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET
         self.Iz = (1/12)*self.mass*(3*(self.stages[-1].radius**2)+self.length**2) # Assumes constant radius = stage[-1].radius
-        T = transformationMatrix(self.RF,self.parentRF) # transformationMatrix self.RF -> self.parentRF
+        R = transformationMatrix(self.RF,self.parentRF) # transformationMatrix self.RF -> self.parentRF
         position = self.getPosition() + np.dot(T,dCoM)
         self.setPosition(position)
 '''

@@ -4,14 +4,15 @@
 
 import numpy as np
 from mayavi import mlab
-from main import CelestialBody
+from main import RigidBody, CelestialBody
 from simulate import simulate, euler
 
 Sun = CelestialBody(1.9885e30, 696342e3)
+
 Earth = CelestialBody(5.972e24, 6.371e6, parent=Sun)
 Earth.setPosition([1, 0, 0], local=True)
-#Earth.rotateBodyRF(np.deg2rad(45), 0, 0)
 Earth.setAttitude([np.deg2rad(45), 0, 0], local=True)
+
 Moon = CelestialBody(7.348e22, 1.737e6, parent=Earth)
 Moon.setPosition([0, 1, 0], local=True)
 Moon.setAttitude([-np.deg2rad(45), 0, 0], local=True)

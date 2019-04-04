@@ -3,7 +3,7 @@
 # Calculate forces and torques acting on objects
 
 import numpy as np
-from helpermath import transformationMatrix
+from helpermath import referenceFrames2rotationMatrix
 
 def gravity(obj1, obj2):
     """
@@ -56,7 +56,7 @@ def thrust(body, vehicle, m_dot, Isp, d, dt):
         forceThrust_body = thrust*np.array([np.cos(d),0]) # vehicleRF forces acting @ CoM
         referenceFrame1 = vehicle.getRF()
         referenceFrame2 = body.getRF()
-        T = transformationMatrix(referenceFrame1,referenceFrame2) # transformationMatrix vehicleRF -> bodyRF
+        T = referenceFrames2rotationMatrix(referenceFrame1,referenceFrame2) # transformationMatrix vehicleRF -> bodyRF
         forceThrust = np.dot(T,forceThrust_body) # bodyRF forces acting @ CoM
 
         # Update vehicle mass due to fuel burn
