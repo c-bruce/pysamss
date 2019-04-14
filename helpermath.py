@@ -20,10 +20,10 @@ def referenceFrames2rotationMatrix(referenceFrame1, referenceFrame2):
 
     i_d, j_d, k_d = referenceFrame2.getIJK()
 
-    T = np.array([[np.dot(i,i_d), np.dot(j,i_d), np.dot(k,i_d)],
+    R = np.array([[np.dot(i,i_d), np.dot(j,i_d), np.dot(k,i_d)],
                   [np.dot(i,j_d), np.dot(j,j_d), np.dot(k,j_d)],
                   [np.dot(i,k_d), np.dot(j,k_d), np.dot(k,k_d)]])
-    return T
+    return R
 
 def euler2rotationMatrix(phi, theta, psi):
     """

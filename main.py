@@ -254,7 +254,7 @@ class RigidBody:
         [Fx, Fy, Fz, Mx, My, Mz]
 
         Args:
-            state (list): State vector to set.
+            U (list): U vector to set.
         """
         self.U[-1] = U
 
@@ -382,33 +382,188 @@ class Stage:
         self.radius = radius
         self.length = length
         self.position = np.array(position)
-        self.CoT = position - (0.5 * length)
+        #self.CoT = position - np.array([(0.5 * length), 0, 0])
+
+    def updateMass(self, m_dot):
+        """
+        Update wetmass and mass due to fuel burn m_dot.
+
+        Args:
+            m_dot (float): Mass delta -ive denotes fuel burnt.
+        """
+        wetmass = self.wetmass + m_dot
+        self.wetmass = wetmass
+        mass = self.drymass + self.wetmass
+        self.mass = mass
 
 class Vessel(RigidBody):
     """
     Vessel class.
 
     Args:
-        stages (list): List of stages [stage1,stage2,...].
+        stages (list): List of stages [stage1, stage2, ...].
         state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        U (list): U vector [Fx, Fy, Fz, Mx, My, Mz].
         parent (parent object): Parent object to inherit parentRF from.
     """
-    def __init__(self, stages, state=None, parent=None):
+    def __init__(self, stages, state=None, U=None, parent=None):
         self.stages = stages
         if state == None:
             self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
         else:
             self.state = [state]
-        self.U = [[0, 0, 0, 0, 0, 0]] # [Fx, Fy, Fz, Mx, My, Mz]
+        if U == None:
+            self.U = [[0, 0, 0, 0, 0, 0]]
+        else:
+            self.U = [U]
         self.universalRF = ReferenceFrame()
-        if parent == None: # If there is no parent the body's parentRF is the univeralRF
+        if parent == None: # If there is no parent the vessels parentRF is the univeralRF
             self.parentRF = self.universalRF
             self.bodyRF = copy.copy(self.universalRF)
             self.parent = None
-        else: # Else the body's parentRF is the parents bodyRF
+        else: # Else the vessels parentRF is the parents bodyRF
             self.parentRF = parent.bodyRF
             self.bodyRF = copy.copy(parent.bodyRF)
             self.parent = parent
+        self.mass = self.getMass()
+        self.length = self.getLength()
+        self.I = self.getI(local=True)
+        self.CoM = self.getCoM()
+        self.CoT = self.getCoT()
+        # Initialise vessel position so it is coincident with CoM.
+        R = referenceFrames2rotationMatrix(self.bodyRF, self.parentRF)
+        position_delta = np.dot(R, self.CoM)
+        self.updatePosition(position_delta)
+
+    def getMass(self):
+        """
+        Get vessel mass.
+
+        Returns:
+            mass (float): Vessel mass (kg).
+        """
+        mass = 0
+        for stage in self.stages:
+            mass += stage.mass
+        return mass
+
+    def updateMass(self, m_dot):
+        """
+        Update stages[0] wetmass and mass due to fuel burn m_dot.
+
+        Args:
+            m_dot (float): Mass delta -ive denotes fuel burnt.
+        """
+        # Step 1: Update mass, I and CoM.
+        self.stages[0].updateMass(m_dot) # Burn fuel m_dot in stages[0]
+        self.mass = self.getMass() # Update mass of vessel
+        self.I = self.getI(local=True) # Update inertia tensor of vessel
+        dCoM = self.getCoM_delta() # Get how much the CoM has moved
+        self.CoM = self.getCoM() # Update the CoM
+        # Step 2: Update vessel position due to moving CoM.
+        R = transformationMatrix(self.bodyRF, self.parentRF) # transformationMatrix bodyRF -> parentRF
+        position_delta = np.dot(R, dCoM)
+        self.updatePosition(position_delta)
+
+    def getI(self, local=None): ### METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET ###
+        """
+        Get inertia matrix I.
+
+        Args:
+            local (bool): If True I is returned in the bodyRF else it is
+                          returned in the universalRF.
+
+        Returns:
+            I (np.array): Inertia tensor (kg.m**2).
+
+        Note:
+            - Assumes CoM is in the centre of rocket.
+            - Assumes all stages are cylindrical, stacked on top of one another
+              with constant radius = stages[-1].radius.
+        """
+        Ix = (1/2) * self.mass * self.stages[-1].radius**2
+        Iy = (1/12) * self.mass * (3 * (self.stages[-1].radius**2) + self.length**2)
+        Iz = (1/12) * self.mass * (3 * (self.stages[-1].radius**2) + self.length**2)
+        if local == True:
+            I = np.array([[Ix, 0, 0],
+                          [0, Iy, 0],
+                          [0, 0, Iz]])
+        else:
+            I = np.array([[Ix, 0, 0],
+                          [0, Iy, 0],
+                          [0, 0, Iz]])
+            R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
+            I = np.dot(R, np.dot(I, R.T)) # I' = [T][I][T.T]
+        return I
+
+    def getLength(self):
+        """
+        Get vessel length.
+
+        Returns:
+            length (float): Vessel length (m).
+        """
+        length = 0
+        for stage in self.stages:
+            length += stage.length
+        return length
+
+    def getCoM(self):
+        """
+        Get vessel CoM.
+        [x, y, z]
+
+        Returns:
+            CoM (np.array): Vessel CoM in bodyRF relative to most forward point
+                            (m).
+        """
+        mass = 0
+        moment = 0
+        for stage in self.stages:
+            mass += stage.mass
+            moment += stage.position * stage.mass
+        CoM = moment/mass
+        return CoM
+
+    def getCoM_delta(self):
+        """
+        Get vessel CoM delta.
+        [x, y, z]
+
+        Returns:
+            dCoM (np.array): Vessel dCoM in bodyRF (m).
+        """
+        mass = 0.0
+        moment = 0.0
+        for stage in self.stages:
+            mass += stage.mass
+            moment = stage.position * stage.mass
+        dCoM = moment/self.mass - self.CoM
+        return dCoM
+
+    def getCoT(self):
+        """
+        Get vessel CoT.
+        [x, y, z]
+
+        Returns:
+            CoT (np.array): Vessel CoT in bodyRF relative to most forward point
+                            (m).
+        """
+        CoT = np.array([-self.getLength(), 0, 0])
+        return CoT
+
+    def updatePosition(self, position_delta):
+        """
+        Update current position state by position_delta (used to move position
+        state so that it is coincident with vessel CoM).
+
+        Args:
+            position_delta (np.array): Amount to move position state by in
+                                       parentRF (m).
+        """
+        position = self.getPosition(local=True) + position_delta
+        self.setPosition(position, local=True)
 
 class Vehicle:
     """
@@ -525,7 +680,7 @@ class Vehicle:
         self.U.append(U)
 
     ### UPDATE METHODS ###
-    def updateMass(self,m_dot):
+    def updateMass(self, m_dot):
         """
         Update self.stage[0].wetmass by m_dot.
 
@@ -543,7 +698,7 @@ class Vehicle:
         self.CoM = moment/self.mass
         ### Iz METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET
         self.Iz = (1/12)*self.mass*(3*(self.stages[-1].radius**2)+self.length**2) # Assumes constant radius = stage[-1].radius
-        R = transformationMatrix(self.RF,self.parentRF) # transformationMatrix self.RF -> self.parentRF
+        R = transformationMatrix(self.RF, self.parentRF) # transformationMatrix self.RF -> self.parentRF
         position = self.getPosition() + np.dot(T,dCoM)
         self.setPosition(position)
 '''

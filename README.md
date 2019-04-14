@@ -14,10 +14,10 @@ To do:
 - Full 6dof capabilities with multiple bodies for simulation of Earth - Moon transfers for example [STARTED]
 - Plotting helper functions
 - Add System class and implement method of simulating full system (i.e. not needing to simulate individual objects) [STARTED]
-- Implement getForceTorque() functions on body and vehicle objects
 
 Complete:
 - Enable simulation of multiple body objects (i.e. to simulate n-body problems)
 - Update body and vehicle objects so that state is saved on the objects instead of in numpy arrays in scripts
 - Update body and vehicle objects to store u vector over time in same way state is stored
 - Optimise appending on objects since this seems to be slowing things down
+- Implement getForceTorque() functions on body and vehicle objects
