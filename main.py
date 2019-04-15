@@ -25,7 +25,8 @@ class ReferenceFrame:
             theta (float): Angle to rotate about in y (rad).
             psi (float): Angle to rotate about in z (rad).
         """
-        R = euler2rotationMatrix(phi, theta, psi)
+        euler = [phi, theta, psi]
+        R = euler2rotationMatrix(euler)
         i = np.dot(R, self.i)
         j = np.dot(R, self.j)
         k = np.dot(R, self.k)
