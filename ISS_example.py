@@ -3,13 +3,11 @@
 # Orbital ISS example
 
 import numpy as np
-import matplotlib.pyplot as plt
-from time import time
+from mayavi import mlab
 from main import ReferenceFrame, CelestialBody, Stage, Vessel
 from forcetorque import gravity, thrust
 from simulate import simulate, euler
-
-startTime = time()
+from plotting import plotCelestialBody, plotTrajectory
 
 # Define Earth
 earth = CelestialBody(5.972e24, 6.371e6)
@@ -18,7 +16,8 @@ earth = CelestialBody(5.972e24, 6.371e6)
 stage1 = Stage(419725, 1, 10, [0, 0, 0])
 iss = Vessel([stage1], parent=earth)
 iss.setPosition([earth.radius + 404000, 0, 0])
-iss.setVelocity([0, 7660, 0])
+#iss.setVelocity([0, 7660, 0])
+iss.setVelocity([0, 7000, 4000])
 
 # Simulation loop
 dt = 0.1
@@ -39,16 +38,13 @@ for i in range(0,55610):
     iss.addForce(gravityForce)
 
 # Plotting
-state = np.array(iss.state)
-issPos = state[:,3:6]
-fig, ax = plt.subplots()
-ax.axis('equal')
-ax.axis([-earth.radius*2,earth.radius*2,-earth.radius*2,earth.radius*2])
-earthPosition = earth.getPosition()
-earthPlot = plt.Circle((earthPosition[0], earthPosition[1]),earth.radius,color='b')
-ax.add_artist(earthPlot)
-ax.plot(state[0:,3],state[0:,4],color='k',lw=0.5)
-plt.show()
+issPositions = np.array(iss.state)[:,3:6]
 
-endTime = time()
-print(str(endTime - startTime) + ' Seconds')
+figure = mlab.figure(size=(600, 600))
+
+earthImageFile = 'plotting/earth.jpg'
+plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
+plotTrajectory(figure, issPositions, (1, 1, 1))
+
+northeastdownRF = iss.getNorthEastDownRF()
+northeastdownRF.plot(figure, iss.getPosition(), scale_factor=100000)

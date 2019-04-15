@@ -425,6 +425,7 @@ class Vessel(RigidBody):
             self.parentRF = parent.bodyRF
             self.bodyRF = copy.copy(parent.bodyRF)
             self.parent = parent
+        self.northeastdownRF = self.getNorthEastDownRF()
         self.mass = self.getMass()
         self.length = self.getLength()
         self.I = self.getI(local=True)
@@ -564,6 +565,32 @@ class Vessel(RigidBody):
         """
         position = self.getPosition(local=True) + position_delta
         self.setPosition(position, local=True)
+
+    def getNorthEastDownRF(self):
+        """
+        Get current north, east, down reference frame. Used for determining
+        attitude.
+        """
+        # Step 1: Get parent position, parent north pole position and vessel position
+        parentPosition = self.parent.getPosition()
+        parentRadius = self.parent.getRadius()
+        parent_k = self.parentRF.k
+        parentNorthPolePosition = parentPosition + (parent_k * parentRadius)
+        vesselPosition = self.getPosition()
+        # Step 2: Get i, j, k vectors for north, east, down reference frame
+        vecVesselParent = parentPosition - vesselPosition
+        vecVesselParentNorthPole = parentNorthPolePosition - vesselPosition
+        k = vecVesselParent # k is the vector joining vesselPosition to parentPosition
+        j = np.cross(vecVesselParent, vecVesselParentNorthPole) # j is normal to the three points
+        i = np.cross(j, k) # i is normal to j and k and completes i, j, k
+        # Step 3: Normalise i, j, k vectors
+        i = i / np.linalg.norm(i)
+        j = j / np.linalg.norm(j)
+        k = k / np.linalg.norm(k)
+        # Step 4: Create the north, east, down reference frame
+        northeastdownRF = ReferenceFrame()
+        northeastdownRF.setIJK(i, j, k)
+        return northeastdownRF
 
 class Vehicle:
     """
