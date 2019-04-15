@@ -40,3 +40,18 @@ def plotTrajectory(figure, points, color):
     p = tvtk.Property(line_width=2, color=color)
     line_actor = tvtk.Actor(mapper=line_mapper, property=p)
     figure.scene.add_actor(line_actor)
+
+def plotCylinder(figure, radius, height, center):
+    """
+    Plot cylinder using mayavi and tvtk.
+
+    Args:
+        figure (mlab.figure): Mayavi figure for plot.
+        radius (float): Cylinder radius (m).
+        height (float): Cylinder height (m).
+        center (list): Cylinder center [x, y, z] (m).
+    """
+    cylinder = tvtk.CylinderSource(radius=radius, height=height, center=[-center[1], center[0], center[2]], resolution=90)
+    cylinder_mapper = tvtk.PolyDataMapper(input_connection=cylinder.output_port)
+    cylinder_actor = tvtk.Actor(mapper=cylinder_mapper, orientation=[0, 0, -90])
+    figure.scene.add_actor(cylinder_actor)
