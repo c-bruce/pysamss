@@ -5,7 +5,7 @@
 from mayavi import mlab
 import numpy as np
 import copy
-from helpermath import referenceFrames2rotationMatrix, euler2rotationMatrix
+from helpermath import *
 
 class ReferenceFrame:
     """
@@ -16,20 +16,16 @@ class ReferenceFrame:
         self.j = np.array([0, 1, 0])
         self.k = np.array([0, 0, 1])
 
-    def rotate(self, phi, theta, psi):
+    def rotate(self, quaternion):
         """
-        Rotate ReferenceFrame about x (phi), y (theta) and z (psi).
+        Rotate ReferenceFrame by quaternion.
 
         Args:
-            phi (float): Angle to rotate about in x (rad).
-            theta (float): Angle to rotate about in y (rad).
-            psi (float): Angle to rotate about in z (rad).
+            quaternion (Quaternion): Quaternion to rotate by.
         """
-        euler = [phi, theta, psi]
-        R = euler2rotationMatrix(euler)
-        i = np.dot(R, self.i)
-        j = np.dot(R, self.j)
-        k = np.dot(R, self.k)
+        i = quaternion.rotate(self.i)
+        j = quaternion.rotate(self.j)
+        k = quaternion.rotate(self.k)
         self.setIJK(i, j, k)
 
     def getIJK(self):
@@ -403,14 +399,14 @@ class Vessel(RigidBody):
 
     Args:
         stages (list): List of stages [stage1, stage2, ...].
-        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z].
         U (list): U vector [Fx, Fy, Fz, Mx, My, Mz].
         parent (parent object): Parent object to inherit parentRF from.
     """
     def __init__(self, stages, state=None, U=None, parent=None):
         self.stages = stages
         if state == None:
-            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
         else:
             self.state = [state]
         if U == None:
@@ -426,7 +422,7 @@ class Vessel(RigidBody):
             self.parentRF = parent.bodyRF
             self.bodyRF = copy.copy(parent.bodyRF)
             self.parent = parent
-        self.northeastdownRF = self.getNorthEastDownRF()
+        self.northeastdownRF = None #self.getNorthEastDownRF()
         self.mass = self.getMass()
         self.length = self.getLength()
         self.I = self.getI(local=True)
@@ -571,6 +567,10 @@ class Vessel(RigidBody):
         """
         Get current north, east, down reference frame. Used for determining
         attitude.
+
+        Returns:
+            northeastdownRF (ReferenceFrame obj): Current north, east, down
+                                                  reference frame.
         """
         # Step 1: Get parent position, parent north pole position and vessel position
         parentPosition = self.parent.getPosition()
@@ -592,6 +592,79 @@ class Vessel(RigidBody):
         northeastdownRF = ReferenceFrame()
         northeastdownRF.setIJK(i, j, k)
         return northeastdownRF
+
+    def updateNorthEastDownRF(self):
+        """
+        Update vessel northeastdownRF attribute with current north, east, down
+        reference frame.
+        """
+        northeastdownRF = self.getNorthEastDownRF()
+        self.northeastdownRF = northeastdownRF
+
+    def getAttitude(self, local=None): ### WORKING IN QUATERNIONS ###
+        """
+        Get current attitude vector.
+        [w, x, y, z]
+
+        Args:
+            local (bool): If true attitude is relative to northeastdownRF. Else
+                          attitude is relative to universalRF.
+
+        Returns:
+            attitude (Quaternion): northeastdownRF/universalRF attitude vector.
+        """
+        self.updateNorthEastDownRF()
+        if local == True: # Get attitude relative to local (northeastdownRF) attitude
+            R = referenceFrames2rotationMatrix(self.bodyRF, self.northeastdownRF)
+            attitude = Quaternion(matrix=R)
+        else:
+            attitude = Quaternion(np.array([self.state[-1][9], self.state[-1][10], self.state[-1][11], self.state[-1][12]]))
+        return attitude
+
+    def setAttitude(self, attitude, local=None):  ### WORKING IN QUATERNIONS ###
+        """
+        Set current attitude vector.
+        [w, x, y, z]
+
+        Args:
+            attitude (Quaternion): Attitude vector to set.
+            local (bool): If true attitude is relative to northeastdownRF. Else
+                          attitude is relative to universalRF.
+        """
+        if local == True: # Convert local (northeastdownRF) attitude to universal attitude
+            # Step 1: Update bodyRF
+            self.bodyRF = self.getNorthEastDownRF()
+            R = referenceFrames2rotationMatrix(self.northeastdownRF, self.universalRF)
+            quaternion = Quaternion(matrix=R)
+            attitude = quaternion.rotate(attitude) # Rotate attitude vector so it is in universalRF
+            self.bodyRF.rotate(attitude) # Rotate bodyRF
+            # Step 2: Update attitude state
+            R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
+            attitude = Quaternion(matrix=R)
+        else:
+            self.bodyRF = ReferenceFrame()
+            self.bodyRF.rotate(attitude)
+        self.state[-1][9:13] = list(attitude)
+
+    def initAttitude(self):
+        """
+        Initialise attitude vector.
+        [w, x, y, z]
+
+        Note:
+            - Defaults to i = -northeastdownRF.k, j = northeastdownRF.i and
+              k = -self.northeastdownRF.j
+        """
+        # Step 1: Rotate bodyRF
+        self.updateNorthEastDownRF()
+        i = -self.northeastdownRF.k
+        j = self.northeastdownRF.i
+        k = -self.northeastdownRF.j
+        self.bodyRF.setIJK(i, j, k)
+        # Step 2: Update attitude state
+        R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
+        attitude = Quaternion(matrix=R)
+        self.state[-1][9:13] = list(attitude)
 
 class Vehicle:
     """

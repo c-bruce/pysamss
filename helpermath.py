@@ -3,6 +3,7 @@
 # Math helper module
 
 import numpy as np
+from pyquaternion import Quaternion
 
 def referenceFrames2rotationMatrix(referenceFrame1, referenceFrame2):
     """
@@ -53,6 +54,20 @@ def euler2rotationMatrix(euler):
     R = np.matmul(Rz, np.matmul(Ry, Rx))
     return R
 
+def rotationMatrix2euler(R):
+    """
+    Get Euler angles representation of rotation matrix R.
+
+    Args:
+        R (np.array): Rotation matrix to convert.
+
+    Returns:
+        euler (np.array): Euler angles representation of rotation matrix.
+    """
+    quaternion = rotationMatrix2quaternion(R)
+    euler = quaternion2euler(quaternion)
+    return euler
+
 def quaternion2rotationMatrix(quaternion):
     """
     Get rotation matrix representation of quaternion [w, x, y, z].
@@ -87,6 +102,7 @@ def rotationMatrix2quaternion(R):
     y = (R[0,2] - R[2,0]) / (4 * w)
     z = (R[1,0] - R[0,1]) / (4 * w)
     quaternion = np.array([w, x, y, z])
+    quaternion = Quaternion(quaternion)
     return quaternion
 
 def euler2quaternion(euler):
@@ -102,11 +118,17 @@ def euler2quaternion(euler):
     phi = euler[0]
     theta = euler[1]
     psi = euler[2]
+    '''
     w = (np.cos(phi / 2) * np.cos(theta / 2) * np.cos(psi / 2)) + (np.sin(phi / 2) * np.sin(theta / 2) * np.sin(psi / 2))
     x = (np.sin(phi / 2) * np.cos(theta / 2) * np.cos(psi / 2)) - (np.cos(phi / 2) * np.sin(theta / 2) * np.sin(psi / 2))
     y = (np.cos(phi / 2) * np.sin(theta / 2) * np.cos(psi / 2)) + (np.sin(phi / 2) * np.cos(theta / 2) * np.sin(psi / 2))
     z = (np.cos(phi / 2) * np.cos(theta / 2) * np.sin(psi / 2)) - (np.sin(phi / 2) * np.sin(theta / 2) * np.cos(psi / 2))
     quaternion = np.array([w, x, y, z])
+    '''
+    q1 = Quaternion(axis=[1, 0, 0], angle=phi)
+    q2 = Quaternion(axis=[0, 1, 0], angle=theta)
+    q3 = Quaternion(axis=[0, 0, 1], angle=psi)
+    quaternion = q3 * q2 * q1
     return quaternion
 
 def quaternion2euler(quaternion):
