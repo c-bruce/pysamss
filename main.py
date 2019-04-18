@@ -28,6 +28,22 @@ class ReferenceFrame:
         k = quaternion.rotate(self.k)
         self.setIJK(i, j, k)
 
+    def rotateAbs(self, quaternion):
+        """
+        Rotate ReferenceFrame by quaternion. Performs absolute rotation from
+        univeralRF.
+
+        Args:
+            quaternion (Quaternion): Quaternion to rotate by.
+        """
+        self.i = np.array([1, 0, 0])
+        self.j = np.array([0, 1, 0])
+        self.k = np.array([0, 0, 1])
+        i = quaternion.rotate(self.i)
+        j = quaternion.rotate(self.j)
+        k = quaternion.rotate(self.k)
+        self.setIJK(i, j, k)
+
     def getIJK(self):
         """ Get i, j and k vectors. """
         return self.i, self.j, self.k
@@ -660,11 +676,48 @@ class Vessel(RigidBody):
         i = -self.northeastdownRF.k
         j = self.northeastdownRF.i
         k = -self.northeastdownRF.j
+        '''
+        i = -self.northeastdownRF.k
+        j = self.northeastdownRF.j
+        k = self.northeastdownRF.i
+        '''
         self.bodyRF.setIJK(i, j, k)
         # Step 2: Update attitude state
         R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
         attitude = Quaternion(matrix=R)
         self.state[-1][9:13] = list(attitude)
+
+    def getHeading(self):
+        """
+        Get vessel heading.
+
+        Returns:
+            direction (float): Direction (North = 0 deg, East = 90 deg,
+                               South = 180 deg, West = 270 deg).
+            pitch (float): Pitch to the horizontal plane (Up = 90 deg, Down =
+                           -90 deg).
+        """
+        self.updateNorthEastDownRF()
+        bodyi = self.bodyRF.i
+        R = referenceFrames2rotationMatrix(self.universalRF, self.northeastdownRF)
+        bodyi = np.dot(R, bodyi) # Convert bodyi so it is in northeastdownRF
+        nedi = [1, 0, 0]
+        nedj = [0, 1, 0]
+        nedk = [0, 0, 1]
+        '''
+        north = np.rad2deg(np.arccos((np.dot([bodyi[0], bodyi[2]], [nedi[0], nedi[2]])) /
+                          (np.linalg.norm([bodyi[0], bodyi[2]]) * np.linalg.norm([nedi[0], nedi[2]]))))
+        east = np.rad2deg(np.arccos((np.dot([bodyi[1], bodyi[2]], [nedj[1], nedj[2]])) /
+                         (np.linalg.norm([bodyi[1], bodyi[2]]) * np.linalg.norm([nedj[1], nedj[2]]))))
+        north = 90 - north
+        east = 90 - east
+        '''
+        direction = np.rad2deg(np.arccos((np.dot([bodyi[0], bodyi[1]], [nedi[0], nedi[1]])) /
+                              (np.linalg.norm([bodyi[0], bodyi[1]]) * np.linalg.norm([nedi[0], nedi[1]]))))
+        if bodyi[1] < 0:
+            direction += 180
+        pitch = -np.rad2deg(np.arcsin((np.dot(bodyi, nedk)) / (np.linalg.norm(bodyi) * np.linalg.norm(nedk))))
+        return direction, pitch
 
 class Vehicle:
     """

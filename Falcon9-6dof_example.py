@@ -24,22 +24,24 @@ falcon9.setPosition([earth.radius + 48.1, 0, 0])
 figure = mlab.figure(size=(600, 600))
 
 earthImageFile = 'plotting/earth.jpg'
-plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
+#plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
 
 falcon9.updateNorthEastDownRF()
 falcon9.northeastdownRF.plot(figure, falcon9.getPosition(), scale_factor=100000)
 
 ### Setup Initial bodyRF position ###
-#falcon9.bodyRF = falcon9.getNorthEastDownRF() # bodyRF = northeastdownRF
-#eulerBody = [np.deg2rad(90), 0, -np.deg2rad(90)] # Angles in bodyRF to rotate about
-#R = referenceFrames2rotationMatrix(falcon9.bodyRF, falcon9.universalRF)
-#eulerUniversal = np.dot(R, eulerBody) # Convert angles from bodyRF to universalRF
-#falcon9.bodyRF.rotate(eulerUniversal) # Rotate bodyRF
-#attitudeNED_euler = [np.deg2rad(0), np.deg2rad(90), -np.deg2rad(90)]
-#attitudeNED_quaternion = euler2quaternion(attitudeNED_euler)
-#falcon9.setAttitude(attitudeNED_quaternion, local=True) # Rotate state vector
 falcon9.initAttitude()
-falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=200000)
+#falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=200000)
+
+falcon9.addTorque([531343.125 * np.deg2rad(90), 6.01303303e+07 * np.deg2rad(90), 6.01303303e+07 * np.deg2rad(90)])
+#falcon9.addTorque([531343.125 * np.deg2rad(180), 6.01303303e+07 * np.deg2rad(180), 6.01303303e+07 * np.deg2rad(180)])
+#falcon9.addTorque([531343.125 * np.deg2rad(180), 0, 0])
+#falcon9.addForce([310500 * 100, 0, 0], local=True)
+simulate(falcon9, euler, 1)
+dt = 0.01
+for i in range(0,100):
+    simulate(falcon9, euler, dt)
+falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=300000)
 
 mlab.view(focalpoint=falcon9.getPosition(), figure=figure)
 

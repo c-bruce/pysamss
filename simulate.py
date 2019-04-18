@@ -3,6 +3,7 @@
 # State space simulator and integration schemes module
 
 import numpy as np
+from pyquaternion import Quaternion
 
 def simulate(obj, scheme, dt):
     """
@@ -24,9 +25,10 @@ def simulate(obj, scheme, dt):
     state0 = obj.getState()
     U = obj.getU()
     m = obj.getMass()
-    I = obj.getI()
+    #I = obj.getI()
+    I = obj.getI(local=True)
     Ii = np.linalg.inv(I) # I**-1
-
+    '''
     A = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # . [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -54,7 +56,7 @@ def simulate(obj, scheme, dt):
                   [0, 0, 0, 0, 0, 0]])
 
     '''
-    QUATERNION REPRESENTATION
+    #QUATERNION REPRESENTATION
     A = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # . [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z]
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -82,14 +84,15 @@ def simulate(obj, scheme, dt):
                   [0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0]])
-    '''
 
     state_d = np.dot(A, state0) + np.dot(B, U)
 
     state1 = scheme(state0, state_d, dt)
-    obj.appendState(state1)
+    obj.appendState(state1.tolist())
     obj.appendU([0, 0, 0, 0, 0, 0])
-    obj.bodyRF.rotate(state1[6], state1[7], state1[8])
+    #obj.bodyRF.rotate(state1[6], state1[7], state1[8])
+    obj.bodyRF.rotateAbs(Quaternion(state1[9:]))
+    #obj.bodyRF.rotate(Quaternion(state1[9:]))
 
 # Integration schemes
 def euler(state0, state_d, dt):
