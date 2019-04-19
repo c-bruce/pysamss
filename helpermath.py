@@ -150,3 +150,19 @@ def quaternion2euler(quaternion):
     psi = np.arctan2(2 * ((w * z) + (x * y)), 1 - 2 * (y**2 + z**2))
     euler = np.array([phi, theta, psi])
     return euler
+
+def heading2vector(heading):
+    """
+    Get vector representation of heading.
+
+    Args:
+        Heading (list): Heading [direction, pitch] (rad).
+
+    Returns:
+        vector (np.array): Unit vector representation of heading.
+    """
+    direction = heading[0]
+    pitch = heading[1]
+    R = euler2rotationMatrix([0, pitch, direction])
+    vector = np.dot(R, [1,0,0])
+    return vector

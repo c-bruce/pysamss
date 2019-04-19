@@ -395,7 +395,7 @@ class Stage:
         self.radius = radius
         self.length = length
         self.position = np.array(position)
-        #self.CoT = position - np.array([(0.5 * length), 0, 0])
+        self.gimbal = [0, 0] # [theta, psi]
 
     def updateMass(self, m_dot):
         """
@@ -692,10 +692,11 @@ class Vessel(RigidBody):
         Get vessel heading.
 
         Returns:
-            direction (float): Direction (North = 0 deg, East = 90 deg,
-                               South = 180 deg, West = 270 deg).
-            pitch (float): Pitch to the horizontal plane (Up = 90 deg, Down =
-                           -90 deg).
+            heading (float): Heading [direction, pitch] (rad).
+
+        Note:
+            - North = 0, East = 1.5708, South = 3.1416, West = 4.7124.
+            - Up = 1.5708, Down = -1.5708.
         """
         self.updateNorthEastDownRF()
         bodyi = self.bodyRF.i
@@ -712,12 +713,13 @@ class Vessel(RigidBody):
         north = 90 - north
         east = 90 - east
         '''
-        direction = np.rad2deg(np.arccos((np.dot([bodyi[0], bodyi[1]], [nedi[0], nedi[1]])) /
-                              (np.linalg.norm([bodyi[0], bodyi[1]]) * np.linalg.norm([nedi[0], nedi[1]]))))
+        direction = np.arccos((np.dot([bodyi[0], bodyi[1]], [nedi[0], nedi[1]])) /
+                              (np.linalg.norm([bodyi[0], bodyi[1]]) * np.linalg.norm([nedi[0], nedi[1]])))
         if bodyi[1] < 0:
             direction += 180
-        pitch = -np.rad2deg(np.arcsin((np.dot(bodyi, nedk)) / (np.linalg.norm(bodyi) * np.linalg.norm(nedk))))
-        return direction, pitch
+        pitch = -np.arcsin((np.dot(bodyi, nedk)) / (np.linalg.norm(bodyi) * np.linalg.norm(nedk)))
+        heading = [direction, pitch]
+        return heading
 
 class Vehicle:
     """

@@ -33,18 +33,34 @@ falcon9.northeastdownRF.plot(figure, falcon9.getPosition(), scale_factor=100000)
 falcon9.initAttitude()
 #falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=200000)
 
-falcon9.addTorque([531343.125 * np.deg2rad(90), 6.01303303e+07 * np.deg2rad(90), 6.01303303e+07 * np.deg2rad(90)])
-#falcon9.addTorque([531343.125 * np.deg2rad(180), 6.01303303e+07 * np.deg2rad(180), 6.01303303e+07 * np.deg2rad(180)])
-#falcon9.addTorque([531343.125 * np.deg2rad(180), 0, 0])
+falcon9.addTorque([0, 6.01303303e+07 * np.deg2rad(5), 6.01303303e+07 * np.deg2rad(5)])
 #falcon9.addForce([310500 * 100, 0, 0], local=True)
 simulate(falcon9, euler, 1)
 dt = 0.01
 for i in range(0,100):
     simulate(falcon9, euler, dt)
-falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=300000)
+falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=200000)
 
 mlab.view(focalpoint=falcon9.getPosition(), figure=figure)
 
+# Get bodyi in northeastdownRF
+R = referenceFrames2rotationMatrix(falcon9.universalRF, falcon9.northeastdownRF)
+print(np.dot(R, falcon9.bodyRF.i))
+
+# Get heading and convert to vector in northeastdownRF
+heading = falcon9.getHeading()
+vector = heading2vector(heading)
+print(vector)
+
+# For gimbal control:
+Fy = [0, 5, 0] # bodyRF
+Fz = [0, 0, 2] # bodyRF
+res = Fy + Fz
+unit_res = res / np.linalg.norm(res)
+# Step 1: Work out the torque vector required to turn onto a heading.
+# Step 2: Find unit_res (at CoT) in bodyRF equivelant to apply torque in direction of torque vector.
+# Step 3: Find gimbal angle to achieve unit_res.
+# Step 4: Based on Kp, Ki and Kd turn onto heading.
 '''
 Isp = 300 # (s)
 m_dot = 1500 # (kg/s)
