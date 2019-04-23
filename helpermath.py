@@ -97,10 +97,16 @@ def rotationMatrix2quaternion(R):
     Returns:
         quaternion (np.array): Quaternion representation of R.
     """
+    '''
     w = np.sqrt((1 + R[0,0]**2 + R[1,1]**2 + R[2,2]**2) / 4)
     x = (R[2,1] - R[1,2]) / (4 * w)
     y = (R[0,2] - R[2,0]) / (4 * w)
     z = (R[1,0] - R[0,1]) / (4 * w)
+    '''
+    w = 0.5 * np.sqrt(R[0,0]**2 + R[1,1]**2 + R[2,2]**2 + 1)
+    x = (R[1,2] - R[2,1]) / (4 * w)
+    y = (R[2,0] - R[0,2]) / (4 * w)
+    z = (R[0,1] - R[1,0]) / (4 * w)
     quaternion = np.array([w, x, y, z])
     quaternion = Quaternion(quaternion)
     return quaternion
@@ -123,7 +129,7 @@ def euler2quaternion(euler):
     x = (np.sin(phi / 2) * np.cos(theta / 2) * np.cos(psi / 2)) - (np.cos(phi / 2) * np.sin(theta / 2) * np.sin(psi / 2))
     y = (np.cos(phi / 2) * np.sin(theta / 2) * np.cos(psi / 2)) + (np.sin(phi / 2) * np.cos(theta / 2) * np.sin(psi / 2))
     z = (np.cos(phi / 2) * np.cos(theta / 2) * np.sin(psi / 2)) - (np.sin(phi / 2) * np.sin(theta / 2) * np.cos(psi / 2))
-    quaternion = np.array([w, x, y, z])
+    quaternion = Quaternion([w, x, y, z])
     '''
     q1 = Quaternion(axis=[1, 0, 0], angle=phi)
     q2 = Quaternion(axis=[0, 1, 0], angle=theta)
@@ -148,6 +154,11 @@ def quaternion2euler(quaternion):
     phi = np.arctan2(2 * ((w * x) + (y * z)), 1 - 2 * (x**2 + y**2))
     theta = np.arcsin(2 * ((w * y) - (z * x)))
     psi = np.arctan2(2 * ((w * z) + (x * y)), 1 - 2 * (y**2 + z**2))
+    '''
+    phi = np.arctan2(2 * ((y * z) + (x * w)), w**2 + z**2 - y**2 - x**2)
+    theta = np.arcsin(-2 * ((x * z) - (y * w)))
+    psi = np.arctan2(2 * ((x * y) + (w * z)), w**2 - z**2 - y**2 - x**2)
+    '''
     euler = np.array([phi, theta, psi])
     return euler
 

@@ -86,7 +86,7 @@ class RigidBody:
     def getState(self):
         """
         Get current state vector.
-        [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
+        [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z]
 
         Returns:
             state (list): Current state vector.
@@ -96,7 +96,7 @@ class RigidBody:
     def setState(self, state):
         """
         Set current state vector.
-        [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
+        [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z]
 
         Args:
             state (list): State vector to set.
@@ -106,7 +106,7 @@ class RigidBody:
     def appendState(self, state):
         """
         Append state vector.
-        [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
+        [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z]
 
         Args:
             state (list): State vector to append.
@@ -215,41 +215,54 @@ class RigidBody:
             attitude_dot = np.dot(R, attitude_dot)
         self.state[-1][6:9] = attitude_dot
 
-    def getAttitude(self, local=None): ### NEED TO CHECK - POSSIBLY UPDATE TO WORK IN QUATERNIONS
+    def getAttitude(self, local=None): ### WORKING IN QUATERNIONS ###
         """
         Get current attitude vector.
-        [phi, theta, psi]
+        [w, x, y, z]
 
         Args:
-            local (bool): If true attitude is relative to parentRF. Else
+            local (bool): If true attitude is relative to northeastdownRF. Else
                           attitude is relative to universalRF.
 
         Returns:
-            attitude (np.array): Body/universal attitude_dot vector.
+            attitude (Quaternion): parentRF/universalRF attitude vector.
         """
-        if local == True: # Convert universal attitude to local (parentRF) attitude
-            R = referenceFrames2rotationMatrix(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
-            attitude = np.dot(R, self.getAttitude()) - self.parent.getAttitude()
+        #self.updateNorthEastDownRF()
+        if local == True: # Get attitude relative to local (northeastdownRF) attitude ### WORK IN PROGRESS ###
+            attitude = self.getAttitude()
+            R = referenceFrames2rotationMatrix(self.universalRF, self.parentRF)
+            quaternion = Quaternion(matrix=R)
+            #attitude = quaternion * quaternion.inverse.rotate(attitude)
+            attitude = quaternion.rotate(quaternion * quaternion.inverse.rotate(attitude))
         else:
-            attitude = np.array([self.state[-1][9], self.state[-1][10], self.state[-1][11]])
+            attitude = Quaternion(np.array([self.state[-1][9], self.state[-1][10], self.state[-1][11], self.state[-1][12]]))
         return attitude
 
-    def setAttitude(self, attitude, local=None):  ### NEED TO CHECK - POSSIBLY UPDATE TO WORK IN QUATERNIONS
+    def setAttitude(self, attitude, local=None):  ### WORKING IN QUATERNIONS ###
         """
         Set current attitude vector.
-        [phi, theta, psi]
+        [w, x, y, z]
 
         Args:
-            attitude (list): Attitude vector to set.
+            attitude (Quaternion): Attitude vector to set.
             local (bool): If true attitude is relative to parentRF. Else
                           attitude is relative to universalRF.
         """
-        if local == True: # Convert local (parentRF) attitude to universal position
-            R = referenceFrames2rotationMatrix(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
-            attitude = np.dot(R, attitude) + self.parent.getAttitude()
-        self.state[-1][9:12] = attitude
-        self.bodyRF = ReferenceFrame()
-        self.bodyRF.rotate(attitude[0], attitude[1], attitude[2])
+        if local == True: # Convert local (parentRF) attitude to universal attitude ### WORK IN PROGRESS ###
+            # Step 1: Update bodyRF
+            i, j, k = self.parentRF.getIJK()
+            self.bodyRF.setIJK(i, j, k)
+            R = referenceFrames2rotationMatrix(self.parentRF, self.universalRF)
+            quaternion = Quaternion(matrix=R)
+            attitude = quaternion.rotate(attitude) # Rotate attitude vector so it is in universalRF
+            self.bodyRF.rotate(attitude) # Rotate bodyRF
+            # Step 2: Update attitude state
+            R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
+            attitude = Quaternion(matrix=R)
+        else:
+            self.bodyRF = ReferenceFrame()
+            self.bodyRF.rotate(attitude)
+        self.state[-1][9:13] = list(attitude)
 
     def getU(self):
         """
@@ -347,7 +360,7 @@ class CelestialBody(RigidBody):
                            [0, 0, (2 / 5) * mass * radius**2]])
         self.radius = radius
         if state == None:
-            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]]
         else:
             self.state = [state]
         self.U = [[0, 0, 0, 0, 0, 0]] # [Fx, Fy, Fz, Mx, My, Mz]
@@ -422,7 +435,7 @@ class Vessel(RigidBody):
     def __init__(self, stages, state=None, U=None, parent=None):
         self.stages = stages
         if state == None:
-            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]]
         else:
             self.state = [state]
         if U == None:
@@ -441,7 +454,7 @@ class Vessel(RigidBody):
         self.northeastdownRF = None #self.getNorthEastDownRF()
         self.mass = self.getMass()
         self.length = self.getLength()
-        self.I = self.getI(local=True)
+        self.I = self.getI()
         self.CoM = self.getCoM()
         self.CoT = self.getCoT()
         # Initialise vessel position so it is coincident with CoM.
@@ -478,7 +491,7 @@ class Vessel(RigidBody):
         R = transformationMatrix(self.bodyRF, self.parentRF) # transformationMatrix bodyRF -> parentRF
         position_delta = np.dot(R, dCoM)
         self.updatePosition(position_delta)
-
+    '''
     def getI(self, local=None): ### METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET ###
         """
         Get inertia matrix I.
@@ -508,6 +521,26 @@ class Vessel(RigidBody):
                           [0, 0, Iz]])
             R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
             I = np.dot(R, np.dot(I, R.T)) # I' = [T][I][T.T]
+        return I
+    '''
+    def getI(self): ### METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET ###
+        """
+        Get inertia matrix I. Always in bodyRF.
+
+        Returns:
+            I (np.array): Inertia tensor (kg.m**2).
+
+        Note:
+            - Assumes CoM is in the centre of rocket.
+            - Assumes all stages are cylindrical, stacked on top of one another
+              with constant radius = stages[-1].radius.
+        """
+        Ix = (1/2) * self.mass * self.stages[-1].radius**2
+        Iy = (1/12) * self.mass * (3 * (self.stages[-1].radius**2) + self.length**2)
+        Iz = (1/12) * self.mass * (3 * (self.stages[-1].radius**2) + self.length**2)
+        I = np.array([[Ix, 0, 0],
+                      [0, Iy, 0],
+                      [0, 0, Iz]])
         return I
 
     def getLength(self):
@@ -630,9 +663,12 @@ class Vessel(RigidBody):
             attitude (Quaternion): northeastdownRF/universalRF attitude vector.
         """
         self.updateNorthEastDownRF()
-        if local == True: # Get attitude relative to local (northeastdownRF) attitude
-            R = referenceFrames2rotationMatrix(self.bodyRF, self.northeastdownRF)
-            attitude = Quaternion(matrix=R)
+        if local == True: # Get attitude relative to local (northeastdownRF) attitude ### WORK IN PROGRESS ###
+            attitude = self.getAttitude()
+            R = referenceFrames2rotationMatrix(self.universalRF, self.northeastdownRF)
+            quaternion = Quaternion(matrix=R)
+            #attitude = quaternion * quaternion.inverse.rotate(attitude)
+            attitude = quaternion.rotate(quaternion * quaternion.inverse.rotate(attitude))
         else:
             attitude = Quaternion(np.array([self.state[-1][9], self.state[-1][10], self.state[-1][11], self.state[-1][12]]))
         return attitude
@@ -647,7 +683,7 @@ class Vessel(RigidBody):
             local (bool): If true attitude is relative to northeastdownRF. Else
                           attitude is relative to universalRF.
         """
-        if local == True: # Convert local (northeastdownRF) attitude to universal attitude
+        if local == True: # Convert local (northeastdownRF) attitude to universal attitude ### WORK IN PROGRESS ###
             # Step 1: Update bodyRF
             self.bodyRF = self.getNorthEastDownRF()
             R = referenceFrames2rotationMatrix(self.northeastdownRF, self.universalRF)
@@ -676,11 +712,6 @@ class Vessel(RigidBody):
         i = -self.northeastdownRF.k
         j = self.northeastdownRF.i
         k = -self.northeastdownRF.j
-        '''
-        i = -self.northeastdownRF.k
-        j = self.northeastdownRF.j
-        k = self.northeastdownRF.i
-        '''
         self.bodyRF.setIJK(i, j, k)
         # Step 2: Update attitude state
         R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
@@ -721,142 +752,10 @@ class Vessel(RigidBody):
         heading = [direction, pitch]
         return heading
 
-class Vehicle:
-    """
-    Create Vehicle object made up of stage objects.
-
-    Args:
-        stages (list): List of stages [stage1,stage2,...].
-        state (list): Vehicle state [u,v,x,y,phidot,phi].
-        RF (obj): Vehicle body referenceFrame.
-        parentRF (obj): Vehicle parent referenceFrame.
-    """
-    def __init__(self,stages,state,RF,parentRF):
-        self.stages = stages
-        self.state = [state]
-        self.U = [] # [Fx, Fy, Mz] VehicleRF
-        self.RF = RF
-        self.parentRF = parentRF
-        self.mass = 0.0
-        self.length = 0.0
-        moment = 0.0
-        for stage in stages:
-            self.mass += stage.mass
-            self.length += stage.length
-            moment += stage.position*stage.mass
-        self.CoM = moment/self.mass
-        self.CoT = np.array([-self.length,0])
-        ### Iz METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET
-        self.Iz = (1/12)*self.mass*(3*(self.stages[-1].radius**2)+self.length**2) # Assumes constant radius = stage[-1].radius
-        self.state[-1][0] = self.state[-1][0] + self.CoM[0]
-        self.state[-1][1] = self.state[-1][1] + self.CoM[1]
-
-    ### GET METHODS ###
-    def getState(self):
-        state = np.array(self.state[-1])
-        return state
-
-    def getU(self):
-        U = np.array(self.U[-1])
-        return U
-
-    def getVelocity(self):
-        velocity = np.array([self.state[-1][0],self.state[-1][1]])
-        return velocity
-
-    def getPosition(self):
-        position = np.array([self.state[-1][2],self.state[-1][3]])
-        return position
-
-    def getPhiDot(self):
-        phidot = np.array([self.state[-1][4]])
-        return phidot
-
-    def getPhi(self):
-        phi = np.array([self.state[-1][5]])
-        return phi
-
-    def getRF(self):
-        RF = self.RF
-        return RF
-
-    def getMass(self):
-        mass = self.mass
-        return mass
-
-    def getIz(self):
-        Iz = self.Iz
-        return Iz
-
-    '''
-    def setI(self, mass, radius):
-        I = np.array([[(2 / 5) * mass * radius**2, 0, 0],
-                      [0, (2 / 5) * mass * radius**2, 0],
-                      [0, 0, (2 / 5) * mass *  radius**2]])
-        #R = referenceFrames2rotationMatrix(self.getBodyRF(), ReferenceFrame())
-        #I = np.dot(T, np.dot(I, T.T)) # I' = [T][I][T.T]
-    '''
-
-    def getCoM(self):
-        CoM = self.CoM
-        return CoM
-
-    def getCoT(self):
-        CoT = self.CoT
-        return CoT
-
-    ### SET METHODS ###
-    def setState(self,state):
-        self.state[-1] = state
-
-    def setRF(self,RF):
-        self.RF = RF
-
-    def rotateRF(self,theta):
-        self.RF.rotate(theta)
-
-    def setVelocity(self,velocity):
-        self.state[-1][0] = velocity[0]
-        self.state[-1][1] = velocity[1]
-
-    def setPosition(self,position):
-        self.state[-1][2] = position[0]
-        self.state[-1][3] = position[1]
-
-    def setPhiDot(self,phidot):
-        self.state[-1][4] = phidot
-
-    def setPhi(self,phi):
-        self.state[-1][5] = phi
-
-    def appendState(self,state):
-        self.state.append(state)
-
-    def appendU(self,U):
-        self.U.append(U)
-
-    ### UPDATE METHODS ###
-    def updateMass(self, m_dot):
+    def getRollPitchYaw(self): ### WORK IN PROGRESS ###
         """
-        Update self.stage[0].wetmass by m_dot.
-
-        Args:
-            m_dot (float): Mass delta -ive denotes fuel burnt.
+        Get roll, pitch, yaw
         """
-        self.stages[0].wetmass = self.stages[0].wetmass + m_dot
-        self.stages[0].mass = self.stages[0].drymass + self.stages[0].wetmass
-        self.mass = 0.0
-        moment = 0.0
-        for stage in self.stages:
-            self.mass += stage.mass
-            moment = stage.position*stage.mass
-        dCoM = moment/self.mass - self.CoM
-        self.CoM = moment/self.mass
-        ### Iz METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET
-        self.Iz = (1/12)*self.mass*(3*(self.stages[-1].radius**2)+self.length**2) # Assumes constant radius = stage[-1].radius
-        R = transformationMatrix(self.RF, self.parentRF) # transformationMatrix self.RF -> self.parentRF
-        position = self.getPosition() + np.dot(T,dCoM)
-        self.setPosition(position)
 '''
 class System:
     """

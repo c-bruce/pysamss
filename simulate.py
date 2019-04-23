@@ -25,8 +25,8 @@ def simulate(obj, scheme, dt):
     state0 = obj.getState()
     U = obj.getU()
     m = obj.getMass()
-    #I = obj.getI()
-    I = obj.getI(local=True)
+    I = obj.getI()
+    #I = obj.getI(local=True)
     Ii = np.linalg.inv(I) # I**-1
     '''
     A = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # . [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]
