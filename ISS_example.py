@@ -17,7 +17,6 @@ stage1 = Stage(419725, 1, 10, [0, 0, 0])
 iss = Vessel([stage1], parent=earth)
 iss.setPosition([earth.radius + 404000, 0, 0])
 iss.setVelocity([0, 7660, 0])
-#iss.setVelocity([0, 7000, 4000])
 
 # Simulation loop
 dt = 0.1

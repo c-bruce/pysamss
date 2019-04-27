@@ -491,38 +491,7 @@ class Vessel(RigidBody):
         R = transformationMatrix(self.bodyRF, self.parentRF) # transformationMatrix bodyRF -> parentRF
         position_delta = np.dot(R, dCoM)
         self.updatePosition(position_delta)
-    '''
-    def getI(self, local=None): ### METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET ###
-        """
-        Get inertia matrix I.
 
-        Args:
-            local (bool): If True I is returned in the bodyRF else it is
-                          returned in the universalRF.
-
-        Returns:
-            I (np.array): Inertia tensor (kg.m**2).
-
-        Note:
-            - Assumes CoM is in the centre of rocket.
-            - Assumes all stages are cylindrical, stacked on top of one another
-              with constant radius = stages[-1].radius.
-        """
-        Ix = (1/2) * self.mass * self.stages[-1].radius**2
-        Iy = (1/12) * self.mass * (3 * (self.stages[-1].radius**2) + self.length**2)
-        Iz = (1/12) * self.mass * (3 * (self.stages[-1].radius**2) + self.length**2)
-        if local == True:
-            I = np.array([[Ix, 0, 0],
-                          [0, Iy, 0],
-                          [0, 0, Iz]])
-        else:
-            I = np.array([[Ix, 0, 0],
-                          [0, Iy, 0],
-                          [0, 0, Iz]])
-            R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
-            I = np.dot(R, np.dot(I, R.T)) # I' = [T][I][T.T]
-        return I
-    '''
     def getI(self): ### METHOD NEEDS IMPROVING CURRENTLY ASSUMES CoM IS IN CENTRE OF ROCKET ###
         """
         Get inertia matrix I. Always in bodyRF.

@@ -4,15 +4,12 @@
 
 import numpy as np
 from mayavi import mlab
-from time import time
 from main import CelestialBody
 from helpermath import *
 from forcetorque import gravity, thrust
 from simulate import simulate, euler
 from plotting import plotCelestialBody, plotTrajectory
 from pyquaternion import Quaternion
-
-startTime = time()
 
 # Define Earth
 earth = CelestialBody(5.972e24, 6.371e6)
