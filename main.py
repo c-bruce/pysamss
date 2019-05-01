@@ -636,7 +636,6 @@ class Vessel(RigidBody):
             attitude = self.getAttitude()
             R = referenceFrames2rotationMatrix(self.universalRF, self.northeastdownRF)
             quaternion = Quaternion(matrix=R)
-            #attitude = quaternion * quaternion.inverse.rotate(attitude)
             attitude = quaternion.rotate(quaternion * quaternion.inverse.rotate(attitude))
         else:
             attitude = Quaternion(np.array([self.state[-1][9], self.state[-1][10], self.state[-1][11], self.state[-1][12]]))

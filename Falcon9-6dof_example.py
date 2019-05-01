@@ -19,79 +19,48 @@ stage1 = Stage(258500, 1.85, 35, [-30.6, 0, 0])
 stage2 = Stage(52000, 1.85, 13.1, [-6.55, 0, 0])
 falcon9 = Vessel([stage1, stage2], parent=earth)
 falcon9.setPosition([earth.radius + 48.1, 0, 0])
-
+falcon9.updateNorthEastDownRF()
+falcon9.initAttitude()
 # Plotting
 figure = mlab.figure(size=(600, 600))
 
 earthImageFile = 'plotting/earth.jpg'
 #plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
 
-falcon9.updateNorthEastDownRF()
+#falcon9.updateNorthEastDownRF()
 falcon9.northeastdownRF.plot(figure, falcon9.getPosition(), scale_factor=100000)
 
 ### Setup Initial bodyRF position ###
-falcon9.initAttitude()
+#falcon9.initAttitude()
 #falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=200000)
 
-falcon9.addTorque([0, 6.01303303e+07 * np.deg2rad(160), 0])
+falcon9.addTorque([531343.125 * np.deg2rad(0), 6.01303303e+07 * np.deg2rad(0), 6.01303303e+07 * np.deg2rad(175)])
+#falcon9.addTorque([531343.125 * np.deg2rad(95), 6.01303303e+07 * np.deg2rad(160), 6.01303303e+07 * np.deg2rad(-50)])
 #falcon9.addForce([310500 * 100, 0, 0], local=True)
 simulate(falcon9, euler, 1)
-dt = 0.01
-for i in range(0,100):
+dt = 0.001
+for i in range(0,1000):
     simulate(falcon9, euler, dt)
 falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=200000)
 
 mlab.view(focalpoint=falcon9.getPosition(), figure=figure)
-'''
-# Get bodyi in northeastdownRF
-R = referenceFrames2rotationMatrix(falcon9.universalRF, falcon9.northeastdownRF)
-print(np.dot(R, falcon9.bodyRF.i))
 
-# Get heading and convert to vector in northeastdownRF
-heading = falcon9.getHeading()
-vector = heading2vector(heading)
-print(vector)
-'''
-# Checking getAttitude(local=True) works correctly
-#R = referenceFrames2rotationMatrix(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
-#position = np.dot(R, self.getPosition() - self.parent.getPosition())
-R1 = referenceFrames2rotationMatrix(falcon9.bodyRF, falcon9.universalRF)
-q1 = Quaternion(matrix=R1)
-print(np.rad2deg(quaternion2euler(q1)))
-R2 = referenceFrames2rotationMatrix(falcon9.northeastdownRF, falcon9.universalRF)
-q2 = Quaternion(matrix=R2)
-print(np.rad2deg(quaternion2euler(q2)))
-R3 = referenceFrames2rotationMatrix(falcon9.bodyRF, falcon9.northeastdownRF)
-q3 = Quaternion(matrix=R3)
-print(np.rad2deg(quaternion2euler(q3)))
-attitude = falcon9.getAttitude()
-print(np.rad2deg(quaternion2euler(attitude)))
+figure1 = mlab.figure(size=(600, 600))
+universalAttitude = falcon9.getAttitude()
+universalAttitudeRF = ReferenceFrame()
+universalAttitudeRF.plot(figure1, [0, 0, 0])
+universalAttitudeRF_new = ReferenceFrame()
+universalAttitudeRF_new.rotate(universalAttitude)
+universalAttitudeRF_new.plot(figure1, [0, 0, 0], scale_factor=2)
 
-q4 = euler2quaternion(np.deg2rad([0, 0, 90]))
-print(np.rad2deg(quaternion2euler(q4)))
-q5 = euler2quaternion(np.deg2rad([0, 90, 0]))
-print(np.rad2deg(quaternion2euler(q5)))
-q6 = q5 * q4 # q6 does the correct rotation at initAttitude
-print(np.rad2deg(quaternion2euler(q6)))
-q7 = q3 + Quaternion(0, 0, 0, 1)
-print(np.rad2deg(quaternion2euler(q7)))
-q8 = q2.inverse * q2.rotate(attitude) # q6 does the correct rotation
-print(np.rad2deg(quaternion2euler(q8)))
-q9 = q2.inverse.rotate(q8)
-print(np.rad2deg(quaternion2euler(q9)))
+figure2 = mlab.figure(size=(600, 600))
+localAttitude = falcon9.getAttitude(local=True)
+localAttitudeRF = ReferenceFrame()
+localAttitudeRF.plot(figure2, [0, 0, 0])
+localAttitudeRF_new = ReferenceFrame()
+localAttitudeRF_new.rotate(localAttitude)
+localAttitudeRF_new.plot(figure2, [0, 0, 0], scale_factor=2)
 
-falcon9.northeastdownRF.rotate(q8)
-falcon9.northeastdownRF.plot(figure, falcon9.getPosition(), scale_factor=50000)
-'''
-northeastdownRF_NED = ReferenceFrame()
-bodyRF_NED = ReferenceFrame()
-bodyRF_NED.rotate(q3)
-R = referenceFrames2rotationMatrix(northeastdownRF_NED, bodyRF_NED)
-attitude_local = Quaternion(matrix=R)
-print(np.rad2deg(quaternion2euler(attitude_local)))
-q = q2.rotate(q3)
-
-'''
 ### Gimbal Control: ###
 # Step 1: Work out the torque vector required to turn onto a heading.
 # Step 2: Find unit_res (at CoT) in bodyRF equivelant to apply torque in direction of torque vector.

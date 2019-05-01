@@ -4,6 +4,7 @@
 
 import numpy as np
 from pyquaternion import Quaternion
+from main import Vessel
 
 def simulate(obj, scheme, dt):
     """
