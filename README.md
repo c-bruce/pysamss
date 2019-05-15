@@ -1,23 +1,21 @@
 # rocketsim
-Python package for simulating space vehicles from launch to orbit. Supports 3dof state space models of launch vehicles and satellites. Includes methods for PID control of state variables.
+Python package for simulating space vehicles from launch to orbit.
 
-"referenceFrame" objects represent 2D reference frames.
-
-"body" objects can be used to represent celestial bodies like the Earth, Moon, Sun etc. Each body has it's own reference frame.
-
-"vehicle" objects can be used to represent and simulate launch vehicles or satellites. Vehicles are made up of "stage" objects. Each vehicle has it's own reference frame.
+Supports 6dof state space model of Vessel objects as well as multiple CelestialBody objects. Includes methods for PID control of state variables.
 
 To do:
-- Improve Iz calculation for vehicles
+- Improve Iz calculation for vessels
 - Full doc strings for classes and methods
 - Aerodynamics module to simulate atmospheric effects
-- Full 6dof capabilities with multiple bodies for simulation of Earth - Moon transfers for example
-- Plotting helper functions
-- Add System class and implement method of simulating full system (i.e. not needing to simulate individual objects)
-- Implement getForceTorque() functions on body and vehicle objects
+- Full 6dof capabilities with multiple bodies for simulation of Earth - Moon transfers for example [STARTED]
+- Plotting helper functions [STARTED]
+- Add System class and implement method of simulating full system (i.e. not needing to simulate individual objects) [STARTED]
+- Update thrust function for 6dof
+- Update doc strings to account for use of quaternions in state vector
 
 Complete:
 - Enable simulation of multiple body objects (i.e. to simulate n-body problems)
 - Update body and vehicle objects so that state is saved on the objects instead of in numpy arrays in scripts
 - Update body and vehicle objects to store u vector over time in same way state is stored
-- Optimise appending on objects since this seems to be slowing things down
+- Optimize appending on objects since this seems to be slowing things down
+- Implement getForceTorque() functions on body and vehicle objects

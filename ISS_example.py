@@ -1,56 +1,45 @@
 # Date: 06/01/2019
 # Author: Callum Bruce
 # Orbital ISS example
-
 import numpy as np
-import matplotlib.pyplot as plt
-from time import time
-from main import ReferenceFrame, Body, Stage, Vehicle
-from forcetorque import gravity, thrust
-from simulate import simulate, euler
-
-startTime = time()
+from mayavi import mlab
+from rocketsim import *
 
 # Define Earth
-earthRF = ReferenceFrame()
-earth = Body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
+earth = CelestialBody(5.972e24, 6.371e6)
 
 # Define ISS
-issRF = ReferenceFrame()
-stage1 = Stage(419725,1,10,[0,0])
-iss = Vehicle([stage1],[0,7660,earth.radius+404000,0,0,0],earthRF,issRF)
+stage1 = Stage(419725, 1, 10, [0, 0, 0])
+iss = Vessel([stage1], parent=earth)
+iss.setPosition([earth.radius + 404000, 0, 0])
+iss.setVelocity([0, 7660, 0])
 
 # Simulation loop
 dt = 0.1
 t = np.array([0])
 
 # iss Initial Forces
-forceGravity = gravity(earth,iss)
-iss.appendU(list(np.append(forceGravity,0)))
+gravityForce = gravity(earth, iss)
+iss.addForce(gravityForce)
 
 for i in range(0,55610):
     t = np.append(t,t[i]+dt)
 
     # Simulate iss
-    simulate(iss,issRF,euler,dt)
+    simulate(iss, euler, dt)
 
     # Calculate forces and torques acting on iss
-    forceGravity = gravity(earth,iss)
-    iss.appendU(list(np.append(forceGravity,0)))
+    gravityForce = gravity(earth, iss)
+    iss.addForce(gravityForce)
 
 # Plotting
-state = np.array(iss.state)
-issPos = iss.getPosition()
-fig, ax = plt.subplots()
-ax.axis('equal')
-ax.axis([-earth.radius*2,earth.radius*2,-earth.radius*2,earth.radius*2])
-earthPosition = earth.getPosition()
-earthPlot = plt.Circle((earthPosition[0], earthPosition[1]),earth.radius,color='b')
-ax.add_artist(earthPlot)
-ax.plot(state[0:,2],state[0:,3],color='k',lw=0.5)
-ax.plot([issPos[0],issPos[0]+issRF.i[0]*1000000],[issPos[1],issPos[1]+issRF.i[1]*1000000],c='r')
-ax.plot([issPos[0],issPos[0]+issRF.j[0]*1000000],[issPos[1],issPos[1]+issRF.j[1]*1000000],c='g')
-plt.show()
+issPositions = np.array(iss.state)[:,3:6]
 
-endTime = time()
-print(str(endTime - startTime) + ' Seconds')
+figure = mlab.figure(size=(600, 600))
+
+earthImageFile = 'plotting/earth.jpg'
+plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
+plotTrajectory(figure, issPositions, (1, 1, 1))
+
+northeastdownRF = iss.getNorthEastDownRF()
+northeastdownRF.plot(figure, iss.getPosition(), scale_factor=100000)

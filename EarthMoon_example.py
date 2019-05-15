@@ -1,65 +1,57 @@
 # Date: 27/01/2019
 # Author: Callum Bruce
 # Earth - Moon example
-
 import numpy as np
-import matplotlib.pyplot as plt
-from time import time
-from main import ReferenceFrame, Body, Stage, Vehicle
-from forcetorque import gravity, thrust
-from simulate import simulate, euler
-
-startTime = time()
+from mayavi import mlab
+from rocketsim import *
 
 # Define Earth
-earthRF = ReferenceFrame()
-earth = Body(5.972e24,6.371e6,[0,0,0,0,0,0],earthRF)
+earth = CelestialBody(5.972e24, 6.371e6)
 
 # Define Moon
-moonRF = ReferenceFrame()
-moon = Body(7.348e22,1.737e6,[0,1022,3.84402e8,0,0,0],moonRF)
+moon = CelestialBody(7.348e22, 1.737e6, parent=earth)
+moon.setPosition([3.84402e8, 0, 0])
+moon.setVelocity([0, 1022, 0])
+moon.setAttitude(euler2quaternion(np.rad2deg([0, 45, 0])))
 
 # earth, moon Initial Forces
-gravityForce = gravity(earth,moon)
-earth.appendU(list(np.append(-gravityForce,0)))
-moon.appendU(list(np.append(gravityForce,0)))
+gravityForce = gravity(earth, moon)
+earth.addForce(-gravityForce)
+moon.addForce(gravityForce)
 
 # Simulation loop
 dt = 60
 t = np.array([0])
 for i in range(0,39312):
-    t = np.append(t,t[i]+dt)
+    t = np.append(t, t[i]+dt)
 
     # Simulate earth
-    simulate(earth,earthRF,euler,dt)
+    simulate(earth, euler, dt)
 
     # Simulate moon
-    simulate(moon,moonRF,euler,dt)
+    simulate(moon, euler, dt)
 
     # Get forces
-    gravityForce = gravity(earth,moon)
+    gravityForce = gravity(earth, moon)
 
-    # Store force
-    earth.appendU(list(np.append(-gravityForce,0)))
-    moon.appendU(list(np.append(gravityForce,0)))
+    # Add forces
+    earth.addForce(-gravityForce)
+    moon.addForce(gravityForce)
 
 # Plotting
-state_earth = np.array(earth.state)
-state_moon = np.array(moon.state)
-fig, ax = plt.subplots()
-ax.axis('equal')
-ax.axis([-earth.radius*100,earth.radius*100,-earth.radius*100,earth.radius*100])
+earthPositions = np.array(earth.state)[:,3:6]
+moonPositions = np.array(moon.state)[:,3:6]
 
-earthPosition = earth.getPosition()
-earthPlot = plt.Circle((earthPosition[0], earthPosition[1]),earth.radius,color='b')
-ax.add_artist(earthPlot)
-ax.plot(state_earth[0:,2],state_earth[0:,3],color='k',lw=0.5)
+figure = mlab.figure(size=(600, 600))
 
-moonPosition = moon.getPosition()
-moonPlot = plt.Circle((moonPosition[0], moonPosition[1]),moon.radius,color='gray')
-ax.add_artist(moonPlot)
-ax.plot(state_moon[0:,2],state_moon[0:,3],color='k',lw=0.5)
-plt.show()
+earthImageFile = 'plotting/earth.jpg'
+plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
+plotTrajectory(figure, earthPositions, (1, 1, 1))
+earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.radius*1.5)
 
-endTime = time()
-print(str(endTime - startTime) + ' Seconds')
+moonImageFile = 'plotting/moon.jpg'
+plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
+plotTrajectory(figure, moonPositions, (1, 1, 1))
+moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.radius*1.5)
+
+mlab.view(focalpoint=moon.getPosition(), figure=figure)
