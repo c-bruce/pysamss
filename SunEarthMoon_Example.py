@@ -4,8 +4,7 @@
 
 import numpy as np
 from mayavi import mlab
-from main import RigidBody, CelestialBody
-from simulate import simulate, euler
+from rocketsim import *
 
 Sun = CelestialBody(1.9885e30, 696342e3)
 

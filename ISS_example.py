@@ -1,13 +1,9 @@
 # Date: 06/01/2019
 # Author: Callum Bruce
 # Orbital ISS example
-
 import numpy as np
 from mayavi import mlab
-from main import ReferenceFrame, CelestialBody, Stage, Vessel
-from forcetorque import gravity, thrust
-from simulate import simulate, euler
-from plotting import plotCelestialBody, plotTrajectory
+from rocketsim import *
 
 # Define Earth
 earth = CelestialBody(5.972e24, 6.371e6)

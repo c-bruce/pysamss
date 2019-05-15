@@ -1,15 +1,9 @@
 # Date: 27/01/2019
 # Author: Callum Bruce
 # Earth - Moon example
-
 import numpy as np
 from mayavi import mlab
-from main import CelestialBody
-from helpermath import *
-from forcetorque import gravity, thrust
-from simulate import simulate, euler
-from plotting import plotCelestialBody, plotTrajectory
-from pyquaternion import Quaternion
+from rocketsim import *
 
 # Define Earth
 earth = CelestialBody(5.972e24, 6.371e6)
