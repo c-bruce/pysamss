@@ -3,7 +3,7 @@
 # Calculate force and torque due thrust
 ### NEEDS TO BE UPDATED TO 6DOF ###
 import numpy as np
-from ..util.helpermath import *
+from ..helpermath.helpermath import *
 
 def thrust(body, vehicle, m_dot, Isp, d, dt):
     """

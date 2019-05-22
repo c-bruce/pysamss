@@ -44,12 +44,12 @@ moonPositions = np.array(moon.state)[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
 
-earthImageFile = 'plotting/earth.jpg'
+earthImageFile = 'rocketsim/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
 plotTrajectory(figure, earthPositions, (1, 1, 1))
 earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.radius*1.5)
 
-moonImageFile = 'plotting/moon.jpg'
+moonImageFile = 'rocketsim/plotting/moon.jpg'
 plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
 plotTrajectory(figure, moonPositions, (1, 1, 1))
 moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.radius*1.5)

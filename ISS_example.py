@@ -37,7 +37,7 @@ issPositions = np.array(iss.state)[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
 
-earthImageFile = 'plotting/earth.jpg'
+earthImageFile = 'rocketsim/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
 plotTrajectory(figure, issPositions, (1, 1, 1))
 

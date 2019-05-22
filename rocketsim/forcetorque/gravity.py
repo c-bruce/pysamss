@@ -2,7 +2,7 @@
 # Author: Callum Bruce
 # Calculate force due to gravity acting on objects
 import numpy as np
-from ..util.helpermath import *
+from ..helpermath.helpermath import *
 
 def gravity(obj1, obj2):
     """
