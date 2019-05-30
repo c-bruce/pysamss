@@ -14,7 +14,7 @@ class CelestialBody(RigidBody):
     Args:
         mass (float): CelestialBody mass (kg).
         radius (float): CelestialBody radius (m).
-        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z].
+        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
         parent (parent object): Parent object to inherit parentRF from.
     """
     def __init__(self, mass, radius, state=None, parent=None):

@@ -34,7 +34,8 @@ class Stage:
         Args:
             m_dot (float): Mass delta -ive denotes fuel burnt.
         """
-        wetmass = self.wetmass + m_dot
-        self.wetmass = wetmass
-        mass = self.drymass + self.wetmass
-        self.mass = mass
+        if self.wetmass > 0:
+            wetmass = self.wetmass + m_dot
+            self.wetmass = wetmass
+            mass = self.drymass + self.wetmass
+            self.mass = mass

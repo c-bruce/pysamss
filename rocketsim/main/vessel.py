@@ -14,7 +14,7 @@ class Vessel(RigidBody):
 
     Args:
         stages (list): List of stages [stage1, stage2, ...].
-        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z].
+        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
         U (list): U vector [Fx, Fy, Fz, Mx, My, Mz].
         parent (parent object): Parent object to inherit parentRF from.
     """
@@ -70,11 +70,11 @@ class Vessel(RigidBody):
         # Step 1: Update mass, I and CoM.
         self.stages[0].updateMass(m_dot) # Burn fuel m_dot in stages[0]
         self.mass = self.getMass() # Update mass of vessel
-        self.I = self.getI(local=True) # Update inertia tensor of vessel
+        self.I = self.getI() # Update inertia tensor of vessel
         dCoM = self.getCoM_delta() # Get how much the CoM has moved
         self.CoM = self.getCoM() # Update the CoM
         # Step 2: Update vessel position due to moving CoM.
-        R = transformationMatrix(self.bodyRF, self.parentRF) # transformationMatrix bodyRF -> parentRF
+        R = referenceFrames2rotationMatrix(self.bodyRF, self.parentRF) # rotationMatrix bodyRF -> parentRF
         position_delta = np.dot(R, dCoM)
         self.updatePosition(position_delta)
 
@@ -208,7 +208,7 @@ class Vessel(RigidBody):
     def getAttitude(self, local=None): ### WORKING IN QUATERNIONS ###
         """
         Get current attitude vector.
-        [w, x, y, z]
+        [qw, qx, qy, qz]
 
         Args:
             local (bool): If true attitude is relative to northeastdownRF. Else
@@ -230,7 +230,7 @@ class Vessel(RigidBody):
     def setAttitude(self, attitude, local=None):  ### WORKING IN QUATERNIONS ###
         """
         Set current attitude vector.
-        [w, x, y, z]
+        [qw, qx, qy, qz]
 
         Args:
             attitude (Quaternion): Attitude vector to set.
@@ -255,7 +255,7 @@ class Vessel(RigidBody):
     def initAttitude(self):
         """
         Initialise attitude vector.
-        [w, x, y, z]
+        [qw, qx, qy, qz]
 
         Note:
             - Defaults to i = -northeastdownRF.k, j = northeastdownRF.i and

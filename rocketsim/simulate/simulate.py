@@ -18,8 +18,8 @@ def simulate(obj, scheme, dt):
         state1 (list): Updated state vector.
 
     Notes:
-        state_d = [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, phi_d, theta_d, psi_d].
-        state = [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        state_d = [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, qw_d, qx_d, qy_d, qz_d].
+        state = [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
         U = [Fx, Fy, Fz, Mx, My, Mz].
     """
     state0 = obj.getState()
@@ -28,7 +28,7 @@ def simulate(obj, scheme, dt):
     I = obj.getI()
     Ii = np.linalg.inv(I) # I**-1
 
-    A = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # . [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z]
+    A = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # . [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],

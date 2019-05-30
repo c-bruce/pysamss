@@ -16,7 +16,7 @@ class RigidBody:
     def getState(self):
         """
         Get current state vector.
-        [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z]
+        [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]
 
         Returns:
             state (list): Current state vector.
@@ -26,7 +26,7 @@ class RigidBody:
     def setState(self, state):
         """
         Set current state vector.
-        [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z]
+        [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]
 
         Args:
             state (list): State vector to set.
@@ -36,7 +36,7 @@ class RigidBody:
     def appendState(self, state):
         """
         Append state vector.
-        [u, v, w, x, y, z, phi_d, theta_d, psi_d, w, x, y, z]
+        [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]
 
         Args:
             state (list): State vector to append.
@@ -148,7 +148,7 @@ class RigidBody:
     def getAttitude(self, local=None): ### WORKING IN QUATERNIONS ###
         """
         Get current attitude vector.
-        [w, x, y, z]
+        [qw, qx, qy, qz]
 
         Args:
             local (bool): If true attitude is relative to northeastdownRF. Else
@@ -171,7 +171,7 @@ class RigidBody:
     def setAttitude(self, attitude, local=None):  ### WORKING IN QUATERNIONS ###
         """
         Set current attitude vector.
-        [w, x, y, z]
+        [qw, qx, qy, qz]
 
         Args:
             attitude (Quaternion): Attitude vector to set.
