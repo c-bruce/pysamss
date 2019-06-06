@@ -24,7 +24,7 @@ m_dot = 1500 # (kg/s)
 gains = [0.12, 0.01, 0.35]
 lims = [5, -5]
 windup = 0.2
-yawControl = PIDcontroller(gains, lims, windup)
+pitchControl = PIDcontroller(gains, lims, windup)
 d_theta = 0.0 # Initial gimbal angle theta (rad)
 d_psi = 0.0 # Initial gimbal angle psi (rad)
 gimbal = [[d_theta, d_psi]]
@@ -49,30 +49,25 @@ for i in range(0, 8000):
 
     # Simulate falcon9
     simulate(falcon9, euler, dt)
-    '''
-    # Fix attitude
-    if i > 300 and i < 900:
-        att = np.deg2rad(20)
-        falcon9.setPhi(att)
-    elif i > 900:
-        v = falcon9.getVelocity()
-        att = np.arctan(v[1]/v[0])
-        falcon9.setPhi(att)
-        print(np.rad2deg(att))
-    '''
     # Use PID to control phi
     if i > 300 and i < 900: # Control pitch = 70 deg
         pitch_pv = falcon9.getHeading()[1]
         pitch_sp = np.deg2rad(70)
-        d_theta = 0
-        d_psi = yawControl.calculate_output(pitch_pv, pitch_sp, dt)
+        d_theta = pitchControl.calculate_output(pitch_pv, pitch_sp, dt)
+        d_psi = 0
         gimbal.append([d_theta, d_psi])
-    elif i > 900: # Control pitch = velocity vector
+    elif i > 900 and i < 1500:
+        pitch_pv = falcon9.getHeading()[1]
+        pitch_sp = np.deg2rad(45)
+        d_theta = pitchControl.calculate_output(pitch_pv, pitch_sp, dt)
+        d_psi = 0
+        gimbal.append([d_theta, d_psi])
+    elif i > 1500: # Control pitch = velocity vector
         v = falcon9.getVelocity()
         pitch_pv = falcon9.getHeading()[1]
-        pitch_sp = np.abs(np.arctan(v[2] / v[0]))
-        d_theta = 0
-        d_psi = yawControl.calculate_output(pitch_pv, pitch_sp, dt)
+        pitch_sp = np.abs(np.arctan(v[0] / v[1]))
+        d_theta = pitchControl.calculate_output(pitch_pv, pitch_sp, dt)
+        d_psi = 0
         gimbal.append([d_theta, d_psi])
     else:
         d_theta = 0
