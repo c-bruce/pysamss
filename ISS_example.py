@@ -22,8 +22,8 @@ t = np.array([0])
 gravityForce = gravity(earth, iss)
 iss.addForce(gravityForce)
 
-for i in range(0,55610):
-    t = np.append(t,t[i]+dt)
+for i in range(0, 55610):
+    t = np.append(t, t[i]+dt)
 
     # Simulate iss
     simulate(iss, euler, dt)
