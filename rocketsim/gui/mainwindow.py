@@ -24,10 +24,9 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(widget) # Set the central widget of the Window.
 
-app = QApplication(sys.argv) # You need one (and only one) QApplication instance per application.
-
-window = MainWindow()
-window.show() # Windows are hidden by default.
-
-# Start the event loop.
-app.exec_()
+# Main loop
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.showMaximized()
+    sys.exit(app.exec_())
