@@ -4,7 +4,7 @@
 # Main event loop
 from mayavi_qwidget import MayaviQWidget
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QHBoxLayout, QSplitter, QTreeView, QWidget, QPushButton, QTabWidget
 
 import sys
@@ -16,40 +16,75 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setWindowTitle("RocketSim")
+        layout_top = RibbonWidget()
 
-        layout_top = QHBoxLayout()
-        layout_top.addWidget(QPushButton("Button 1"), 1)
-        layout_top.addWidget(QPushButton("Button 2"), 2)
+        layout_middle = MainWidget()
 
-        layout_middle = MiddleWidget()
-        '''
-        layout_middle = QSplitter()
-        layout_middle.setOrientation(Qt.Horizontal)
-        layout_middle.addWidget(QTreeView())
-        layout_middle.addWidget(MayaviQWidget())
-        '''
-        layout_bottom = QHBoxLayout()
-        layout_bottom.addWidget(QPushButton(), 1)
+        layout_bottom = QWidget()
+        layout_bottom.setFixedHeight(100)
+        #layout_bottom.addWidget(QPushButton(), 1)
 
         layout_main = QVBoxLayout()
-        layout_main.addLayout(layout_top, 1)
+        layout_main.addWidget(layout_top, 1)
         layout_main.addWidget(layout_middle, 2)
-        layout_main.addLayout(layout_bottom, 3)
+        layout_main.addWidget(layout_bottom, 3)
 
         widget = QWidget()
         widget.setLayout(layout_main)
 
         self.setCentralWidget(widget) # Set the central widget of the Window.
 
-class MiddleWidget(QSplitter):
+class RibbonWidget(QTabWidget):
+    """
+    RibbonWidget class.
+
+    Classic ribbon sytle File, Tools, View...
+    """
     def __init__(self, *args, **kwargs):
-        super(MiddleWidget, self).__init__(*args, **kwargs)
+        super(RibbonWidget, self).__init__(*args, **kwargs)
+        self.setFixedHeight(110)
+        # File tab
+        self.tab1 = QWidget()
+        self.tab1.layout = QHBoxLayout(self)
+        self.button_new = QPushButton("New")
+        self.button_new.setFixedSize(50, 50)
+        self.tab1.layout.addWidget(self.button_new)
+        self.button_open = QPushButton("Open")
+        self.button_open.setFixedSize(50, 50)
+        self.tab1.layout.addWidget(self.button_open)
+        self.button_save = QPushButton("Save")
+        self.button_save.setFixedSize(50, 50)
+        self.tab1.layout.addWidget(self.button_save)
+        self.tab1.setLayout(self.tab1.layout)
+        self.tab1.layout.setAlignment(Qt.AlignLeft)
+
+        # Tools tab
+        self.tab2 = QWidget()
+        # View tab
+        self.tab3 = QWidget()
+        self.addTab(self.tab1, "File")
+        self.addTab(self.tab2, "Tools")
+        self.addTab(self.tab3, "View")
+
+class MainWidget(QSplitter):
+    """
+    MainWidget class.
+
+    Main widget containing a QTreeView and MayaviQWidget.
+    """
+    def __init__(self, *args, **kwargs):
+        super(MainWidget, self).__init__(*args, **kwargs)
         self.setOrientation(Qt.Horizontal)
-        self.addWidget(QTreeView())
-        self.addWidget(MayaviQWidget())
+        self.tree = QTreeView()
+        self.addWidget(self.tree)
+        self.viewer = MayaviQWidget()
+        self.addWidget(self.viewer)
+        self.setSizes([100, 200])
+        #self.setStretchFactor(0, 3)
 # Main loop
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    #app.setStyle('Fusion')
     window = MainWindow()
     window.showMaximized()
     sys.exit(app.exec_())
