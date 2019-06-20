@@ -4,10 +4,13 @@
 from tvtk.api import tvtk
 from tvtk.pyface.scene_editor import SceneEditor
 
+from mayavi import mlab
+from mayavi.tools.engine_manager import EngineManager
 from mayavi.tools.mlab_scene_model import MlabSceneModel
 from mayavi.core.ui.mayavi_scene import MayaviScene
+from mayavi.core.api import PipelineBase, Source, Engine
 
-from traits.api import HasTraits, Instance
+from traits.api import HasTraits, Instance, Array
 from traitsui.api import View, Item
 
 from pyface.qt import QtGui, QtCore
@@ -34,18 +37,14 @@ class Visualization(HasTraits):
     Notes:
         - tvtk.Actor() objects can be added to self.scene in the normal way.
     """
-    scene = Instance(MlabSceneModel, ())
-    view = View(Item('scene', editor=SceneEditor(scene_class=MayaviScene), height=500, width=500, show_label=False), resizable=True)
+    scene3d = Instance(MlabSceneModel, ())
 
     def __init__(self, **traits):
-        HasTraits.__init__(self, **traits)
-        self.generate_data()
+        super(Visualization, self).__init__(**traits)
+        mlab.pipeline.scalar_field([[0]], figure=self.scene3d.mayavi_scene) # Weird work around to get self.scene3d.mlab.orientation_axes() working
+        self.scene3d.mlab.orientation_axes()
 
-    def generate_data(self):
-        """
-        Simple example of adding a tvtk.Actor() to self.scene. Will remove in future.
-        """
-        plotCylinder(self.scene, 0.5, 1.0, [0.0, 0.0, 0.0])
+    view = View(Item('scene3d', editor=SceneEditor(scene_class=MayaviScene), height=500, width=500, show_label=False), resizable=True)
 
 class MayaviQWidget(QtGui.QWidget):
     """
@@ -60,13 +59,10 @@ class MayaviQWidget(QtGui.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.visualization = Visualization()
-        #plotCylinder(self.visualization.scene, 0.5, 1.0, [0.0, 0.0, 0.0])
+        plotCylinder(self.visualization.scene3d, 0.5, 1.0, [0.0, 0.0, 0.0])
+        #self.visualization.scene3d.mlab.orientation_axes()
 
         # edit_traits call will generate the widget to embed
         self.ui = self.visualization.edit_traits(parent=self, kind='subpanel').control
         layout.addWidget(self.ui)
         self.ui.setParent(self)
-
-#a = Visualization()
-#plotCylinder(a.scene, 0.5, 1.0, [0.0, 0.0, 0.0])
-#a.configure_traits()
