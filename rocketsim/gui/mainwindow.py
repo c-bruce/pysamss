@@ -4,10 +4,29 @@
 # Main event loop
 from mayavi_qwidget import MayaviQWidget
 
+from tvtk.api import tvtk
+
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QHBoxLayout, QSplitter, QTreeView, QWidget, QPushButton, QTabWidget
 
 import sys
+
+import numpy as np
+
+def plotCylinder(scene, radius, height, center):
+    """
+    Plot cylinder using mayavi and tvtk.
+
+    Args:
+        figure (mlab.figure): Mayavi figure for plot.
+        radius (float): Cylinder radius (m).
+        height (float): Cylinder height (m).
+        center (list): Cylinder center [x, y, z] (m).
+    """
+    cylinder = tvtk.CylinderSource(radius=radius, height=height, center=[-center[1], center[0], center[2]], resolution=90)
+    cylinder_mapper = tvtk.PolyDataMapper(input_connection=cylinder.output_port)
+    cylinder_actor = tvtk.Actor(mapper=cylinder_mapper, orientation=[0, 0, -90])
+    scene.add_actor(cylinder_actor)
 
 class MainWindow(QMainWindow):
     """
@@ -19,15 +38,20 @@ class MainWindow(QMainWindow):
         layout_top = RibbonWidget()
 
         layout_middle = MainWidget()
+        #print(type(layout_middle.viewer.visualization.scene3d))
 
-        layout_bottom = QWidget()
-        layout_bottom.setFixedHeight(100)
+        #layout_bottom = QWidget()
+        layout_bottom = QHBoxLayout()
+        button_plotcylinder = QPushButton("Plot Cylinder")
+        button_plotcylinder.pressed.connect(lambda: plotCylinder(layout_middle.viewer.visualization.scene3d, 0.5, 1.0, [np.random.random()*10, np.random.random()*10, np.random.random()*10]))
+        layout_bottom.addWidget(button_plotcylinder)
+        #layout_bottom.setFixedHeight(100)
         #layout_bottom.addWidget(QPushButton(), 1)
 
         layout_main = QVBoxLayout()
         layout_main.addWidget(layout_top, 1)
         layout_main.addWidget(layout_middle, 2)
-        layout_main.addWidget(layout_bottom, 3)
+        layout_main.addLayout(layout_bottom, 3)
 
         widget = QWidget()
         widget.setLayout(layout_main)
