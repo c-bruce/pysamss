@@ -4,14 +4,33 @@
 import numpy as np
 from mayavi import mlab
 from rocketsim import *
+import datetime
+import julian
+from jplephem.spk import SPK
+
+# Get Earth and Moon positions and velocity from jplephem
+kernel = SPK.open('rocketsim/resources/de430.bsp')
+
+time = datetime.datetime.now()
+time1 = julian.to_jd(time)
+time2 = time1 + 1 / (24 * 60 * 60)
+earth_pos1 = kernel[3,399].compute(time1) * 1000
+earth_pos2 = kernel[3,399].compute(time2) * 1000
+earth_vel = (earth_pos2 - earth_pos1) / 1
+
+moon_pos1 = kernel[3,301].compute(time1) * 1000
+moon_pos2 = kernel[3,301].compute(time2) * 1000
+moon_vel = (moon_pos2 - moon_pos1) / 1
 
 # Define Earth
 earth = CelestialBody(5.972e24, 6.371e6)
+earth.setPosition(earth_pos1)
+earth.setVelocity(earth_vel)
 
 # Define Moon
 moon = CelestialBody(7.348e22, 1.737e6, parent=earth)
-moon.setPosition([3.84402e8, 0, 0])
-moon.setVelocity([0, 1022, 0])
+moon.setPosition(moon_pos1)
+moon.setVelocity(moon_vel)
 moon.setAttitude(euler2quaternion(np.rad2deg([0, 45, 0])))
 
 # earth, moon Initial Forces
