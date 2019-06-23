@@ -10,16 +10,16 @@ class System:
     System class.
 
     Args:
-        celestial_bodies (list): List of CelestialBody objects in system.
-        vessels (list): List of Vessel objects in system.
+        celestial_bodies (dict): Dict of CelestialBody objects in system.
+        vessels (dict): Dict of Vessel objects in system.
     """
     def __init__(self, celestial_bodies=None, vessels=None):
         if celestial_bodies == None:
-            self.celestial_bodies = []
+            self.celestial_bodies = {}
         else:
             self.celestial_bodies = celestial_bodies
         if vessels == None:
-            self.vessels = []
+            self.vessels = {}
         else:
             self.vessels = vessels
         self.time = [0]
@@ -42,13 +42,13 @@ class System:
         """
         Add a CelestialBody to the system.
         """
-        self.celestial_bodies.append(celestial_body)
+        self.celestial_bodies[celestial_body.name] = celestial_body
 
     def addVessel(self, vessel):
         """
         Add a Vessel to the system.
         """
-        self.vessels.append(vessel)
+        self.vessels[vessel.name] = vessel
 
     def save(self, path):
         """

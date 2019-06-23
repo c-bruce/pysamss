@@ -6,11 +6,11 @@ from mayavi import mlab
 from rocketsim import *
 
 # Define Earth
-earth = CelestialBody(5.972e24, 6.371e6)
+earth = CelestialBody('Earth', 5.972e24, 6.371e6)
 
 # Define ISS
 stage1 = Stage(419725, 1, 10, [0, 0, 0])
-iss = Vessel([stage1], parent=earth)
+iss = Vessel('ISS', [stage1], parent=earth)
 iss.setPosition([earth.radius + 404000, 0, 0])
 iss.setVelocity([0, 7660, 0])
 

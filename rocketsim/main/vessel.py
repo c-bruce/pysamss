@@ -18,7 +18,8 @@ class Vessel(RigidBody):
         U (list): U vector [Fx, Fy, Fz, Mx, My, Mz].
         parent (parent object): Parent object to inherit parentRF from.
     """
-    def __init__(self, stages, state=None, U=None, parent=None):
+    def __init__(self, name, stages, state=None, U=None, parent=None):
+        self.name = name
         self.stages = stages
         if state == None:
             self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]]

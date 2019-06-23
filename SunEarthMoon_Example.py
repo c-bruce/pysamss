@@ -6,13 +6,13 @@ import numpy as np
 from mayavi import mlab
 from rocketsim import *
 
-Sun = CelestialBody(1.9885e30, 696342e3)
+Sun = CelestialBody('Sun', 1.9885e30, 696342e3)
 
-Earth = CelestialBody(5.972e24, 6.371e6, parent=Sun)
+Earth = CelestialBody('Earth', 5.972e24, 6.371e6, parent=Sun)
 Earth.setPosition([1, 0, 0], local=True)
 Earth.setAttitude(euler2quaternion([np.deg2rad(45), 0, 0]))
 
-Moon = CelestialBody(7.348e22, 1.737e6, parent=Earth)
+Moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent=Earth)
 Moon.setPosition([0, 1, 0], local=True)
 Moon.setAttitude(euler2quaternion([-np.deg2rad(45), 0, 0]), local=True)
 #Moon.setPosition([0, 3.84402e8, 0], local=True)
