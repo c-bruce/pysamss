@@ -5,10 +5,8 @@ Supports 6dof state space model of Vessel objects as well as multiple CelestialB
 
 To do:
 - Improve Iz calculation for vessels
-- Full doc strings for classes and methods
 - Aerodynamics module to simulate atmospheric effects
 - Plotting helper functions [STARTED]
-- Add System class and implement method of simulating full system (i.e. not needing to simulate individual objects) [STARTED]
 
 Complete:
 - Enable simulation of multiple body objects (i.e. to simulate n-body problems)
@@ -19,3 +17,5 @@ Complete:
 - Update thrust function for 6dof
 - Update doc strings to account for use of quaternions in state vector
 - Full 6dof capabilities with multiple bodies for simulation of Earth - Moon transfers for example
+- Add System class and implement method of simulating full system (i.e. not needing to simulate individual objects)
+- Full doc strings for classes and methods
