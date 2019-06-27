@@ -24,8 +24,8 @@ def plotCelestialBody(figure, radius, position, image):
     Nrad = 180
     sphere = tvtk.TexturedSphereSource(radius=radius, theta_resolution=Nrad, phi_resolution=Nrad) # Pipeline - source
     sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
-    sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=texture) # Pipeline - actor
-    sphere_actor.add_position((position[0],position[1],position[2])) # Pipeline - actor.add_position
+    sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=texture, orientation=[0, 0, 180]) # Pipeline - actor
+    sphere_actor.add_position((position[0], position[1], position[2])) # Pipeline - actor.add_position
     # Step 3: Add actor to figure
     figure.scene.add_actor(sphere_actor)
 

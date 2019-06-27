@@ -3,6 +3,7 @@
 # System Class
 import numpy as np
 import itertools
+import h5py
 from .referenceframe import ReferenceFrame
 from ..helpermath.helpermath import *
 from ..simulate.simulate import simulate
@@ -130,9 +131,27 @@ class System:
 
     def save(self, path):
         """
-        Save system to file
-        ##### .h5 or text #####
+        Save system to .h5 file.
         """
+        f = h5py.File(path + '.h5', 'a')
+        # Celestial Bodies
+        f.create_group('celestial_bodies')
+        for celestial_body in self.celestial_bodies:
+            obj = self.celestial_bodies[celestial_body]
+            group = f.create_group('celestial_bodies/' + obj.name)
+            '''
+            group.attrs.create('name', obj.name, dtype=np.dtype('U')
+            group.attrs.create('mass', obj.mass)
+            group.attrs.create('I', obj.I)
+            group.attrs.create('radius', obj.radius)
+            group.attrs.create('parent', obj.parent.name)
+            group.attrs.create('bodyRF_i', obj.bodyRF.i)
+            group.attrs.create('bodyRF_j', obj.bodyRF.j)
+            group.attrs.create('bodyRF_k', obj.bodyRF.k)
+            '''
+            group.create_dataset('state', data=np.array(obj.state))
+            group.create_dataset('U', data=np.array(obj.U))
+        f.close()
 
     def load(self, path):
         """
