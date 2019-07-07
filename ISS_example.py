@@ -9,10 +9,11 @@ from rocketsim import *
 earth = CelestialBody('Earth', 5.972e24, 6.371e6)
 
 # Define ISS
-stage1 = Stage(419725, 1, 10, [0, 0, 0])
+# See https://spaceflight.nasa.gov/realdata/sightings/SSapplications/Post/JavaSSOP/orbit/ISS/SVPOST.html
+stage1 = Stage(415699, 1, 10, [0, 0, 0])
 iss = Vessel('ISS', [stage1], parent=earth)
-iss.setPosition([earth.radius + 404000, 0, 0])
-iss.setVelocity([0, 7660, 0])
+iss.setPosition([-4201711.07, 545774.11, -5320140.96])
+iss.setVelocity([-1259.409615, -7539.787624, 218.310203])
 
 # Simulation loop
 dt = 0.1
@@ -43,3 +44,5 @@ plotTrajectory(figure, issPositions, (1, 1, 1))
 
 northeastdownRF = iss.getNorthEastDownRF()
 northeastdownRF.plot(figure, iss.getPosition(), scale_factor=100000)
+
+mlab.view(focalpoint=iss.getPosition(), figure=figure)

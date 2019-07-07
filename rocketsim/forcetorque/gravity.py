@@ -4,23 +4,23 @@
 import numpy as np
 from ..helpermath.helpermath import *
 
-def gravity(obj1, obj2):
+def gravity(obj0, obj1):
     """
-    Calculate gravityForce acting on an obj2 (body or vehicle.
+    Calculate gravityForce acting on an obj1 (body or vehicle).
 
     Args:
-        obj1 (obj): Body or vehicle object
-        obj2 (obj): Body or vehicle object
+        obj0 (obj): CelestialBody object.
+        obj1 (obj): CelestialBody or Vessel object.
 
     Returns:
-        gravityForce (np.array): gravityForce acting on obj2.
+        gravityForce (np.array): gravityForce acting on obj1.
     """
     G = 6.67408e-11 # Gravitational constant [m**3.kg**-1.s**-2]
+    obj0Mass = obj0.getMass()
     obj1Mass = obj1.getMass()
-    obj2Mass = obj2.getMass()
+    obj0Position = obj0.getPosition()
     obj1Position = obj1.getPosition()
-    obj2Position = obj2.getPosition()
-    r = np.linalg.norm(obj1Position - obj2Position)
-    F = G * ((obj1Mass * obj2Mass) / r**2)
-    gravityForce = F * (obj1Position - obj2Position) / np.linalg.norm(obj1Position - obj2Position)
+    r = np.linalg.norm(obj0Position - obj1Position)
+    F = G * ((obj0Mass * obj1Mass) / r**2)
+    gravityForce = F * (obj0Position - obj1Position) / np.linalg.norm(obj0Position - obj1Position)
     return gravityForce
