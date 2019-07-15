@@ -15,6 +15,14 @@ iss = Vessel('ISS', [stage1], parent=earth)
 iss.setPosition([-4201711.07, 545774.11, -5320140.96])
 iss.setVelocity([-1259.409615, -7539.787624, 218.310203])
 
+# Setup System
+system = System()
+system.addCelestialBody(earth)
+system.addVessel(iss)
+system.set_dt(0.1)
+system.set_endtime(5561.0)
+system.simulateSystem()
+'''
 # Simulation loop
 dt = 0.1
 t = np.array([0])
@@ -32,7 +40,7 @@ for i in range(0, 55610):
     # Calculate forces and torques acting on iss
     gravityForce = gravity(earth, iss)
     iss.addForce(gravityForce)
-
+'''
 # Plotting
 issPositions = np.array(iss.state)[:,3:6]
 

@@ -33,29 +33,13 @@ moon.setPosition(moon_pos1)
 moon.setVelocity(moon_vel)
 moon.setAttitude(euler2quaternion(np.rad2deg([0, 45, 0])))
 
-# earth, moon Initial Forces
-gravityForce = gravity(earth, moon)
-earth.addForce(-gravityForce)
-moon.addForce(gravityForce)
-
-# Simulation loop
-dt = 60
-t = np.array([0])
-for i in range(0,39312):
-    t = np.append(t, t[i]+dt)
-
-    # Simulate earth
-    simulate(earth, euler, dt)
-
-    # Simulate moon
-    simulate(moon, euler, dt)
-
-    # Get forces
-    gravityForce = gravity(earth, moon)
-
-    # Add forces
-    earth.addForce(-gravityForce)
-    moon.addForce(gravityForce)
+# Setup System
+system = System()
+system.addCelestialBody(earth)
+system.addCelestialBody(moon)
+system.set_dt(60.0)
+system.set_endtime(2358720.0)
+system.simulateSystem()
 
 # Plotting
 earthPositions = np.array(earth.state)[:,3:6]
