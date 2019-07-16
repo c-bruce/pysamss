@@ -2,7 +2,40 @@
 # Author: Callum Bruce
 # Helper functions for converting between cartesian and orbital elements
 import numpy as np
-import scipy
+import scipy.optimize
+import julian
+import datetime
+
+def twoline2orbitalelements(line1, line2, obj0):
+    """
+    Convert two-line element set to orbital elements.
+
+    Args:
+        line1 (str): Line 1 of two-line element set.
+        line2 (str): Line 2 of two-line element set.
+        obj0 (obj): Primary CelestialBody object.
+
+    Returns:
+        a (float): Semi-major axis [m].
+        e (float): Eccentricity.
+        omega (float): Argument of periapsis [rad].
+        LAN (float): Longitude of assending node [rad].
+        i (float): Inclination [rad].
+        M0 (float): Mean anomaly [rad] at epoch t0 [JD].
+        t0 (float): Epoch at t = 0 [JD].
+        t (float): Considered epoch [JD].
+    """
+    G = 6.67408e-11 # Gravitational constant [m**3.kg**-1.s**-2]
+    n = float(line2[52:63]) # Mean motion [day*-1]
+    a = np.cbrt((G * obj0.mass) / (n * ((2 * np.pi) / 86400))**2) # Semi-major axis [m].
+    e = float('0.' + line2[26:33]) # Eccentricity.
+    omega = np.deg2rad(float(line2[34:42])) # Argument of periapsis [rad].
+    LAN = np.deg2rad(float(line2[17:25])) # Longitude of assending node [rad].
+    i = np.deg2rad(float(line2[9:16])) # Inclination [rad].
+    M0 = np.deg2rad(float(line2[43:51])) # Mean anomaly [rad] at epoch t0 [JD].
+    t0 = julian.to_jd(datetime.datetime(2000 + int(line1[18:20]), 1, 1)) + float(line1[20:32])
+    t = t0
+    return a, e, omega, LAN, i, M0, t0, t
 
 def orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, obj0):
     """
@@ -52,6 +85,7 @@ def orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, obj0):
     R = np.matmul(Rz(-LAN), np.matmul(Rx(-i), Rz(-omega)))
     position = np.dot(R, position)
     velocity = np.dot(R, velocity)
+    return position, velocity
 
 def cartesian2orbitalelements():
     """

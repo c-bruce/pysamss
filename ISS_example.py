@@ -9,11 +9,24 @@ from rocketsim import *
 earth = CelestialBody('Earth', 5.972e24, 6.371e6)
 
 # Define ISS
-# See https://spaceflight.nasa.gov/realdata/sightings/SSapplications/Post/JavaSSOP/orbit/ISS/SVPOST.html
+"""
+See https://spaceflight.nasa.gov/realdata/sightings/SSapplications/Post/JavaSSOP/orbit/ISS/SVPOST.html
+See https://celestrak.com/NORAD/elements/stations.txt
+ISS (ZARYA)
+1 25544U 98067A   19197.73699074  .00000224  00000-0  11644-4 0  9990
+2 25544  51.6432 214.6630 0006951 146.0156 190.2537 15.50981102179836
+"""
+line1 = "1 25544U 98067A   19197.73699074  .00000224  00000-0  11644-4 0  9990"
+line2 = "2 25544  51.6432 214.6630 0006951 146.0156 190.2537 15.50981102179836"
+
+a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(line1, line2, earth)
+
+iss_position, iss_velocity = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, earth)
+
 stage1 = Stage(415699, 1, 10, [0, 0, 0])
 iss = Vessel('ISS', [stage1], parent=earth)
-iss.setPosition([-4201711.07, 545774.11, -5320140.96])
-iss.setVelocity([-1259.409615, -7539.787624, 218.310203])
+iss.setPosition(iss_position)
+iss.setVelocity(iss_velocity)
 
 # Setup System
 system = System()
@@ -22,25 +35,7 @@ system.addVessel(iss)
 system.set_dt(0.1)
 system.set_endtime(5561.0)
 system.simulateSystem()
-'''
-# Simulation loop
-dt = 0.1
-t = np.array([0])
 
-# iss Initial Forces
-gravityForce = gravity(earth, iss)
-iss.addForce(gravityForce)
-
-for i in range(0, 55610):
-    t = np.append(t, t[i]+dt)
-
-    # Simulate iss
-    simulate(iss, euler, dt)
-
-    # Calculate forces and torques acting on iss
-    gravityForce = gravity(earth, iss)
-    iss.addForce(gravityForce)
-'''
 # Plotting
 issPositions = np.array(iss.state)[:,3:6]
 
