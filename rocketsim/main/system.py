@@ -128,6 +128,8 @@ class System:
                 simulate(self.vessels[vessel], self.scheme, self.dt)
             # Step 3: Iterate on time
             self.time.append(self.time[-1] + self.dt)
+            progress = (i / iterations) * 100
+            print("Progress: " + str(np.around(progress, decimals = 2)) + " %.")
 
     def save(self, path):
         """
