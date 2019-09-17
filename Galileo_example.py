@@ -3,7 +3,7 @@
 # Galileo constellation example
 import numpy as np
 from mayavi import mlab
-from rocketsim import *
+from pysamss import *
 
 # Setup System
 system = System()
@@ -38,7 +38,7 @@ system.simulateSystem()
 
 # Plotting
 figure = mlab.figure(size=(600, 600))
-earthImageFile = 'rocketsim/plotting/earth.jpg'
+earthImageFile = 'pysamss/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
 
 for gsat in system.vessels.values():

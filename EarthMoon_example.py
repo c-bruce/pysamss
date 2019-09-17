@@ -3,13 +3,13 @@
 # Earth - Moon example
 import numpy as np
 from mayavi import mlab
-from rocketsim import *
+from pysamss import *
 import datetime
 import julian
 from jplephem.spk import SPK
 
 # Get Earth and Moon positions and velocity from jplephem
-kernel = SPK.open('rocketsim/resources/de430.bsp')
+kernel = SPK.open('pysamss/resources/de430.bsp')
 
 time = datetime.datetime.now()
 time1 = julian.to_jd(time)
@@ -47,12 +47,12 @@ moonPositions = np.array(moon.state)[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
 
-earthImageFile = 'rocketsim/plotting/earth.jpg'
+earthImageFile = 'pysamss/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
 plotTrajectory(figure, earthPositions, (1, 1, 1))
 earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.radius*1.5)
 
-moonImageFile = 'rocketsim/plotting/moon.jpg'
+moonImageFile = 'pysamss/plotting/moon.jpg'
 plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
 plotTrajectory(figure, moonPositions, (1, 1, 1))
 moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.radius*1.5)

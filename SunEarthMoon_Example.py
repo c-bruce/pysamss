@@ -4,7 +4,7 @@
 
 import numpy as np
 from mayavi import mlab
-from rocketsim import *
+from pysamss import *
 
 Sun = CelestialBody('Sun', 1.9885e30, 696342e3)
 

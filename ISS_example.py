@@ -3,7 +3,7 @@
 # Orbital ISS example
 import numpy as np
 from mayavi import mlab
-from rocketsim import *
+from pysamss import *
 
 # Define Earth
 earth = CelestialBody('Earth', 5.972e24, 6.371e6)
@@ -32,7 +32,7 @@ iss.setVelocity(iss_velocity)
 system = System()
 system.addCelestialBody(earth)
 system.addVessel(iss)
-system.set_dt(0.1)
+system.set_dt(1)
 system.set_endtime(5561.0)
 system.simulateSystem()
 
@@ -41,7 +41,7 @@ issPositions = np.array(iss.state)[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
 
-earthImageFile = 'rocketsim/plotting/earth.jpg'
+earthImageFile = 'pysamss/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
 plotTrajectory(figure, issPositions, (1, 1, 1))
 

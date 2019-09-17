@@ -4,7 +4,7 @@
 import numpy as np
 from mayavi import mlab
 from pyquaternion import Quaternion
-from rocketsim import *
+from pysamss import *
 
 # Define Earth
 earth = CelestialBody('Earth', 5.972e24, 6.371e6)
@@ -90,7 +90,7 @@ falcon9Positions = np.array(falcon9.state)[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
 
-earthImageFile = 'rocketsim/plotting/earth.jpg'
+earthImageFile = 'pysamss/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
 plotTrajectory(figure, falcon9Positions, (1, 1, 1))
 falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=1000)
