@@ -1,32 +1,76 @@
-# Date: 25/03/2019
+# Date: 10/01/2020
 # Author: Callum Bruce
-# Reference frames example showing parent-child get/setPosition
-
+# Sun - Earth - Moon Example
 import numpy as np
 from mayavi import mlab
 from pysamss import *
+import datetime
+import julian
+from jplephem.spk import SPK
 
-Sun = CelestialBody('Sun', 1.9885e30, 696342e3)
+# Get Sun, Earth and Moon positions and velocity from jplephem
+kernel = SPK.open('pysamss/resources/de430.bsp')
 
-Earth = CelestialBody('Earth', 5.972e24, 6.371e6, parent=Sun)
-Earth.setPosition([1, 0, 0], local=True)
-Earth.setAttitude(euler2quaternion([np.deg2rad(45), 0, 0]))
+time = datetime.datetime.now()
+time1 = julian.to_jd(time)
+time2 = time1 + 1 / (24 * 60 * 60)
 
-Moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent=Earth)
-Moon.setPosition([0, 1, 0], local=True)
-Moon.setAttitude(euler2quaternion([-np.deg2rad(45), 0, 0]), local=True)
-#Moon.setPosition([0, 3.84402e8, 0], local=True)
-#Moon.setVelocity([0, 10, 0], local=True)
+sun_pos1 = kernel[0,10].compute(time1) * 1000
+sun_pos2 = kernel[0,10].compute(time2) * 1000
+sun_vel = (sun_pos2 - sun_pos1) / 1
+
+earth_pos1 = (kernel[0,3].compute(time1) + kernel[3,399].compute(time1)) * 1000
+earth_pos2 = (kernel[0,3].compute(time2) + kernel[3,399].compute(time2)) * 1000
+earth_vel = (earth_pos2 - earth_pos1) / 1
+
+moon_pos1 = (kernel[0,3].compute(time1) + kernel[3,301].compute(time1)) * 1000
+moon_pos2 = (kernel[0,3].compute(time2) + kernel[3,301].compute(time2)) * 1000
+moon_vel = (moon_pos2 - moon_pos1) / 1
+
+# Define Sun
+sun = CelestialBody('Sun', 1.9885e30, 696342e3)
+sun.setPosition(sun_pos1)
+sun.setVelocity(sun_vel)
+
+# Define Earth
+earth = CelestialBody('Earth', 5.972e24, 6.371e6, parent=sun)
+earth.setPosition(earth_pos1)
+earth.setVelocity(earth_vel)
+
+# Define Moon
+moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent=earth)
+moon.setPosition(moon_pos1)
+moon.setVelocity(moon_vel)
+
+# Setup System
+system = System()
+system.addCelestialBody(sun)
+system.addCelestialBody(earth)
+system.addCelestialBody(moon)
+system.set_dt(60.0)
+system.set_endtime(31536000.0)
+system.simulateSystem()
+
+# Plotting
+sunPositions = np.array(sun.state)[:,3:6]
+earthPositions = np.array(earth.state)[:,3:6]
+moonPositions = np.array(moon.state)[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
 
-scale_factor = 1
-#Sun.bodyRF.plot(figure, Sun.getPosition(), scale_factor=scale_factor)
-#Earth.bodyRF.plot(figure, Earth.getPosition(), scale_factor=scale_factor)
-#Moon.bodyRF.plot(figure, Moon.getPosition(), scale_factor=scale_factor)
-'''
-### Simulate a single second for a rotating moon and plot updated Moon.bodyRF
-Moon.setAttitudeDot([0, np.deg2rad(10), 0], local=True)
-simulate(Moon, euler, 1)
-Moon.bodyRF.plot(figure, Moon.getPosition(), scale_factor=0.5)
-'''
+sunImageFile = 'pysamss/plotting/sun.jpg'
+plotCelestialBody(figure, sun.getRadius(), sun.getPosition(), sunImageFile)
+plotTrajectory(figure, sunPositions, (1, 1, 1))
+earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.radius*1.5)
+
+earthImageFile = 'pysamss/plotting/earth.jpg'
+plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
+plotTrajectory(figure, earthPositions, (1, 1, 1))
+earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.radius*1.5)
+
+moonImageFile = 'pysamss/plotting/moon.jpg'
+plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
+plotTrajectory(figure, moonPositions, (1, 1, 1))
+moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.radius*1.5)
+
+mlab.view(focalpoint=moon.getPosition(), figure=figure)

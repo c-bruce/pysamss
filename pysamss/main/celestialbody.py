@@ -12,6 +12,7 @@ class CelestialBody(RigidBody):
     CelestialBody class.
 
     Args:
+        name (str): CelestialBody name.
         mass (float): CelestialBody mass (kg).
         radius (float): CelestialBody radius (m).
         state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
