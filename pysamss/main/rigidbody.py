@@ -9,10 +9,32 @@ class RigidBody:
     """
     RigidBody class.
 
+    Args:
+        name (str): RigidBody name.
+        state (np.array): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
+        U (np.array): U vector [Fx, Fy, Fz, Mx, My, Mz].
+        parent_name (str): Name of parent RigidBody object.
+
     Note:
         - CelestialBody and Vessel classes derive the bulk of their methods
           from RigidBody class.
     """
+    def __init__(self, name, state=None, U=None, parent_name=None):
+        self.name = name
+        if state is None:
+            self.state = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+        else:
+            self.state = state
+        if U is None:
+            self.U = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        else:
+            self.U = U
+        self.universalRF = None
+        self.parentRF = None
+        self.bodyRF = None
+        self.parent_name = parent_name
+        self.parent = None
+
     def getState(self):
         """
         Get current state vector.
@@ -21,7 +43,7 @@ class RigidBody:
         Returns:
             state (list): Current state vector.
         """
-        return self.state[-1]
+        return self.state
 
     def setState(self, state):
         """
@@ -31,17 +53,7 @@ class RigidBody:
         Args:
             state (list): State vector to set.
         """
-        self.state[-1] = state
-
-    def appendState(self, state):
-        """
-        Append state vector.
-        [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]
-
-        Args:
-            state (list): State vector to append.
-        """
-        self.state.append(state)
+        self.state = state
 
     def getVelocity(self, local=None):
         """
@@ -59,7 +71,7 @@ class RigidBody:
             R = referenceFrames2rotationMatrix(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
             velocity = np.dot(R, self.getVelocity() - self.parent.getVelocity())
         else:
-            velocity = np.array([self.state[-1][0], self.state[-1][1], self.state[-1][2]])
+            velocity = np.array([self.state[0], self.state[1], self.state[2]])
         return velocity
 
     def setVelocity(self, velocity, local=None):
@@ -75,7 +87,7 @@ class RigidBody:
         if local == True: # Convert local velocity to universal velocity
             R = referenceFrames2rotationMatrix(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
             velocity = np.dot(R, velocity) + self.parent.getVelocity()
-        self.state[-1][0:3] = velocity
+        self.state[0:3] = velocity
 
     def getPosition(self, local=None):
         """
@@ -93,7 +105,7 @@ class RigidBody:
             R = referenceFrames2rotationMatrix(self.universalRF, self.parentRF) # Transform from universalRF to parentRF
             position = np.dot(R, self.getPosition() - self.parent.getPosition())
         else:
-            position = np.array([self.state[-1][3], self.state[-1][4], self.state[-1][5]])
+            position = np.array([self.state[3], self.state[4], self.state[5]])
         return position
 
     def setPosition(self, position, local=None):
@@ -109,7 +121,7 @@ class RigidBody:
         if local == True: # Convert local position to universal position
             R = referenceFrames2rotationMatrix(self.parentRF, self.universalRF) # Transform from parentRF to universalRF
             position = np.dot(R, position) + self.parent.getPosition()
-        self.state[-1][3:6] = position
+        self.state[3:6] = position
 
     def getAttitudeDot(self, local=None):
         """
@@ -127,7 +139,7 @@ class RigidBody:
             R = referenceFrames2rotationMatrix(self.universalRF, self.bodyRF) # Transform from universalRF to bodyRF
             attitude_dot = np.dot(R, self.getAttitudeDot())
         else:
-            attitude_dot = np.array([self.state[-1][6], self.state[-1][7], self.state[-1][8]])
+            attitude_dot = np.array([self.state[6], self.state[7], self.state[8]])
         return attitude_dot
 
     def setAttitudeDot(self, attitude_dot, local=None):
@@ -143,7 +155,7 @@ class RigidBody:
         if local == True: # Convert local (bodyRF) attitude_dot to universal attitude_dot
             R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF) # Transform from bodyRF to universalRF
             attitude_dot = np.dot(R, attitude_dot)
-        self.state[-1][6:9] = attitude_dot
+        self.state[6:9] = attitude_dot
 
     def getAttitude(self, local=None): ### WORKING IN QUATERNIONS ###
         """
@@ -165,7 +177,7 @@ class RigidBody:
             #attitude = quaternion * quaternion.inverse.rotate(attitude)
             attitude = quaternion.rotate(quaternion * quaternion.inverse.rotate(attitude))
         else:
-            attitude = Quaternion(np.array([self.state[-1][9], self.state[-1][10], self.state[-1][11], self.state[-1][12]]))
+            attitude = Quaternion(np.array([self.state[9], self.state[10], self.state[11], self.state[12]]))
         return attitude
 
     def setAttitude(self, attitude, local=None):  ### WORKING IN QUATERNIONS ###
@@ -192,7 +204,7 @@ class RigidBody:
         else:
             self.bodyRF = ReferenceFrame()
             self.bodyRF.rotate(attitude)
-        self.state[-1][9:13] = list(attitude)
+        self.state[9:13] = list(attitude)
 
     def getU(self):
         """
@@ -202,7 +214,7 @@ class RigidBody:
         Returns:
             U (list): Current U vector.
         """
-        return self.U[-1]
+        return self.U
 
     def setU(self, U):
         """
@@ -212,17 +224,7 @@ class RigidBody:
         Args:
             U (list): U vector to set.
         """
-        self.U[-1] = U
-
-    def appendU(self, U):
-        """
-        Append U vector.
-        [Fx, Fy, Fz, Mx, My, Mz]
-
-        Args:
-            U (list): U vector to append.
-        """
-        self.U.append(U)
+        self.U = U
 
     def addForce(self, force, local=None):
         """
@@ -237,9 +239,9 @@ class RigidBody:
         if local == True:
             R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
             force = np.dot(R, force)
-        self.U[-1][0] += force[0]
-        self.U[-1][1] += force[1]
-        self.U[-1][2] += force[2]
+        self.U[0] += force[0]
+        self.U[1] += force[1]
+        self.U[2] += force[2]
 
     def addTorque(self, torque, local=None):
         """
@@ -254,9 +256,82 @@ class RigidBody:
         if local == True:
             R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
             torque = np.dot(R, torque)
-        self.U[-1][3] += torque[0]
-        self.U[-1][4] += torque[1]
-        self.U[-1][5] += torque[2]
+        self.U[3] += torque[0]
+        self.U[4] += torque[1]
+        self.U[5] += torque[2]
+    
+    def getParent(self):
+        """
+        Get parent.
+
+        Returns:
+            parent (obj): Typically a CelestialBody object or 'None'.
+        """
+        return self.parent
+
+    def setParent(self, parent):
+        """
+        Set parent.
+
+        Args:
+            parent (obj): Rigid body representing parent. Typically a CelestialBody object.
+        """
+        self.parent = parent
+        #self.setParentRF(parent.bodyRF)
+    
+    def getUniversalRF(self):
+        """
+        Get RigidBody universal reference frame.
+
+        Returns:
+            universalRF (obj): Universal ReferenceFrame object.
+        """
+        return self.universalRF
+    
+    def setUniversalRF(self, universalRF):
+        """
+        Set RigidBody universal reference frame.
+
+        Args:
+            universalRF (obj): Universal ReferenceFrame object.
+        """
+        self.universalRF = universalRF
+    
+    def getParentRF(self):
+        """
+        Get RigidBody parent reference frame.
+
+        Returns:
+            parentRF (obj): Parent ReferenceFrame object.
+        """
+        return self.parentRF
+    
+    def setParentRF(self, parentRF):
+        """
+        Set RigidBody parent reference frame.
+
+        Args:
+            parentRF (obj): Parent ReferenceFrame object.
+        """
+        self.parentRF = parentRF
+    
+    def getBodyRF(self):
+        """
+        Get RigidBody body reference frame.
+
+        Returns:
+            bodyRF (obj): Body ReferenceFrame object.
+        """
+        return self.bodyRF
+    
+    def setBodyRF(self, bodyRF):
+        """
+        Set RigidBody body reference frame.
+
+        Args:
+            bodyRF (obj): Body ReferenceFrame object.
+        """
+        self.bodyRF = bodyRF
 
     def getParentChain(self):
         """

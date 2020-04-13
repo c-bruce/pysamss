@@ -15,39 +15,27 @@ class CelestialBody(RigidBody):
         name (str): CelestialBody name.
         mass (float): CelestialBody mass (kg).
         radius (float): CelestialBody radius (m).
-        state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
-        parent (parent object): Parent object to inherit parentRF from.
+        state (np.array): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
+        U (np.array): U vector [Fx, Fy, Fz, Mx, My, Mz].
+        parent_name (str): Name of parent RigidBody object.
     """
-    def __init__(self, name, mass, radius, state=None, parent=None):
-        self.name = name
+    def __init__(self, name, mass, radius, state=None, U=None, parent_name=None):
+        RigidBody.__init__(self, name, state=state, U=U, parent_name=parent_name)
         self.mass = mass
-        self.I = np.array([[(2 / 5) * mass * radius**2, 0, 0],
-                           [0, (2 / 5) * mass * radius**2, 0],
-                           [0, 0, (2 / 5) * mass * radius**2]])
         self.radius = radius
-        if state == None:
-            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]]
-        else:
-            self.state = [state]
-        self.U = [[0, 0, 0, 0, 0, 0]] # [Fx, Fy, Fz, Mx, My, Mz]
-        self.universalRF = ReferenceFrame()
-        if parent == None: # If there is no parent the body's parentRF is the univeralRF
-            self.parentRF = self.universalRF
-            self.bodyRF = copy.copy(self.universalRF)
-            self.parent = None
-        else: # Else the body's parentRF is the parents bodyRF
-            self.parentRF = parent.bodyRF
-            self.bodyRF = copy.copy(parent.bodyRF)
-            self.parent = parent
+        self.I = self.getI()
 
     def getMass(self):
         """ Get mass. """
         return self.mass
-
-    def getI(self):
-        """ Get inertia matrix I. """
-        return self.I
-
+    
     def getRadius(self):
         """ Get radius. """
         return self.radius
+
+    def getI(self):
+        """ Get inertia matrix I. """
+        I = np.array([[(2 / 5) * self.mass * self.radius**2, 0.0, 0.0],
+                      [0.0, (2 / 5) * self.mass * self.radius**2, 0.0],
+                      [0.0, 0.0, (2 / 5) * self.mass * self.radius**2]])
+        return I

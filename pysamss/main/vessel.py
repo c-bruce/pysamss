@@ -13,41 +13,21 @@ class Vessel(RigidBody):
     Vessel class.
 
     Args:
+        name (str): Vessel name.
         stages (list): List of stages [stage1, stage2, ...].
         state (list): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
         U (list): U vector [Fx, Fy, Fz, Mx, My, Mz].
-        parent (parent object): Parent object to inherit parentRF from.
+        parent_name (str): Name of parent RigidBody object.
     """
-    def __init__(self, name, stages, state=None, U=None, parent=None):
-        self.name = name
+    def __init__(self, name, stages, state=None, U=None, parent_name=None):
+        RigidBody.__init__(self, name, state=state, U=U, parent_name=parent_name)
         self.stages = stages
-        if state == None:
-            self.state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]]
-        else:
-            self.state = [state]
-        if U == None:
-            self.U = [[0, 0, 0, 0, 0, 0]]
-        else:
-            self.U = [U]
-        self.universalRF = ReferenceFrame()
-        if parent == None: # If there is no parent the vessels parentRF is the univeralRF
-            self.parentRF = self.universalRF
-            self.bodyRF = copy.copy(self.universalRF)
-            self.parent = None
-        else: # Else the vessels parentRF is the parents bodyRF
-            self.parentRF = parent.bodyRF
-            self.bodyRF = copy.copy(parent.bodyRF)
-            self.parent = parent
-        self.northeastdownRF = None #self.getNorthEastDownRF()
         self.mass = self.getMass()
         self.length = self.getLength()
         self.I = self.getI()
         self.CoM = self.getCoM()
         self.CoT = self.getCoT()
-        # Initialise vessel position so it is coincident with CoM.
-        R = referenceFrames2rotationMatrix(self.bodyRF, self.parentRF)
-        position_delta = np.dot(R, self.CoM)
-        self.updatePosition(position_delta)
+        self.northeastdownRF = None
 
     def getMass(self):
         """
@@ -94,9 +74,9 @@ class Vessel(RigidBody):
         Ix = (1/2) * self.mass * self.stages[-1].radius**2
         Iy = (1/12) * self.mass * (3 * (self.stages[-1].radius**2) + self.length**2)
         Iz = (1/12) * self.mass * (3 * (self.stages[-1].radius**2) + self.length**2)
-        I = np.array([[Ix, 0, 0],
-                      [0, Iy, 0],
-                      [0, 0, Iz]])
+        I = np.array([[Ix, 0.0, 0.0],
+                      [0.0, Iy, 0.0],
+                      [0.0, 0.0, Iz]])
         return I
 
     def getLength(self):
@@ -106,7 +86,7 @@ class Vessel(RigidBody):
         Returns:
             length (float): Vessel length (m).
         """
-        length = 0
+        length = 0.0
         for stage in self.stages:
             length += stage.length
         return length
@@ -120,8 +100,8 @@ class Vessel(RigidBody):
             CoM (np.array): Vessel CoM in bodyRF relative to most forward point
                             (m).
         """
-        mass = 0
-        moment = 0
+        mass = 0.0
+        moment = 0.0
         for stage in self.stages:
             mass += stage.mass
             moment += stage.position * stage.mass
@@ -155,6 +135,14 @@ class Vessel(RigidBody):
         """
         CoT = np.array([-self.getLength(), 0, 0])
         return CoT
+    
+    def initPosition(self):
+        """
+        Initialise vessel position so it is coincident with CoM.
+        """
+        R = referenceFrames2rotationMatrix(self.bodyRF, self.parentRF)
+        position_delta = np.dot(R, self.CoM)
+        self.updatePosition(position_delta)
 
     def updatePosition(self, position_delta):
         """
@@ -205,6 +193,26 @@ class Vessel(RigidBody):
         """
         northeastdownRF = self.getNorthEastDownRF()
         self.northeastdownRF = northeastdownRF
+    
+    def initAttitude(self):
+        """
+        Initialise attitude vector.
+        [qw, qx, qy, qz]
+
+        Note:
+            - Defaults to i = -northeastdownRF.k, j = northeastdownRF.i and
+              k = -self.northeastdownRF.j
+        """
+        # Step 1: Rotate bodyRF
+        self.updateNorthEastDownRF()
+        i = -self.northeastdownRF.k
+        j = self.northeastdownRF.i
+        k = -self.northeastdownRF.j
+        self.bodyRF.setIJK(i, j, k)
+        # Step 2: Update attitude state
+        R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
+        attitude = Quaternion(matrix=R)
+        self.state[9:13] = list(attitude)
 
     def getAttitude(self, local=None): ### WORKING IN QUATERNIONS ###
         """
@@ -225,7 +233,7 @@ class Vessel(RigidBody):
             quaternion = Quaternion(matrix=R)
             attitude = quaternion.rotate(quaternion * quaternion.inverse.rotate(attitude))
         else:
-            attitude = Quaternion(np.array([self.state[-1][9], self.state[-1][10], self.state[-1][11], self.state[-1][12]]))
+            attitude = Quaternion(np.array([self.state[9], self.state[10], self.state[11], self.state[12]]))
         return attitude
 
     def setAttitude(self, attitude, local=None):  ### WORKING IN QUATERNIONS ###
@@ -251,27 +259,7 @@ class Vessel(RigidBody):
         else:
             self.bodyRF = ReferenceFrame()
             self.bodyRF.rotate(attitude)
-        self.state[-1][9:13] = list(attitude)
-
-    def initAttitude(self):
-        """
-        Initialise attitude vector.
-        [qw, qx, qy, qz]
-
-        Note:
-            - Defaults to i = -northeastdownRF.k, j = northeastdownRF.i and
-              k = -self.northeastdownRF.j
-        """
-        # Step 1: Rotate bodyRF
-        self.updateNorthEastDownRF()
-        i = -self.northeastdownRF.k
-        j = self.northeastdownRF.i
-        k = -self.northeastdownRF.j
-        self.bodyRF.setIJK(i, j, k)
-        # Step 2: Update attitude state
-        R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
-        attitude = Quaternion(matrix=R)
-        self.state[-1][9:13] = list(attitude)
+        self.state[9:13] = list(attitude)
 
     def getHeading(self):
         """

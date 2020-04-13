@@ -8,10 +8,11 @@ class ReferenceFrame:
     """
     ReferenceFrame class.
     """
-    def __init__(self):
+    def __init__(self, name=None):
         self.i = np.array([1, 0, 0])
         self.j = np.array([0, 1, 0])
         self.k = np.array([0, 0, 1])
+        self.name = name
 
     def rotate(self, quaternion):
         """
@@ -57,6 +58,15 @@ class ReferenceFrame:
         self.i = i
         self.j = j
         self.k = k
+    
+    def setName(self, name):
+        """
+        Set reference frame name.
+
+        Args:
+            name (str): Reference frame name.
+        """
+        self.name = name
 
     def plot(self, figure, origin, scale_factor=None):
         """
