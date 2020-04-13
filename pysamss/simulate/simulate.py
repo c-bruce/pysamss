@@ -59,8 +59,8 @@ def simulate(obj, scheme, dt):
     state_d = np.dot(A, state0) + np.dot(B, U)
 
     state1 = scheme(state0, state_d, dt)
-    obj.appendState(state1.tolist())
-    obj.appendU([0, 0, 0, 0, 0, 0])
+    obj.setState(state1)
+    obj.setU(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     obj.bodyRF.rotateAbs(Quaternion(state1[9:]))
     if type(obj) is Vessel:
         obj.updateNorthEastDownRF()
