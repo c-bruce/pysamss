@@ -13,7 +13,7 @@ earth = CelestialBody('Earth', 5.972e24, 6.371e6)
 system.addCelestialBody(earth)
 
 # Load in TLE data to define constellation
-f = open("rocketsim/resources/GalileoConstellation_TLE.txt", "r")
+f = open("pysamss/resources/GalileoConstellation_TLE.txt", "r")
 gc_TLE = f.read()
 gc_TLE = gc_TLE.split("\n")[0:-1]
 f.close()
@@ -48,3 +48,4 @@ for gsat in system.vessels.values():
     northeastdownRF.plot(figure, gsat.getPosition(), scale_factor=100000)
 
 #mlab.view(focalpoint=iss.getPosition(), figure=figure)
+mlab.show()

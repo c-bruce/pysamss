@@ -24,28 +24,32 @@ a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(line1, line2, earth)
 iss_position, iss_velocity = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, earth)
 
 stage1 = Stage(415699, 1, 10, [0, 0, 0])
-iss = Vessel('ISS', [stage1], parent=earth)
+iss = Vessel('ISS', [stage1], parent_name='Earth')
 iss.setPosition(iss_position)
 iss.setVelocity(iss_velocity)
 
 # Setup System
-system = System()
+system = System('ISS')
 system.addCelestialBody(earth)
 system.addVessel(iss)
 system.set_dt(1)
 system.set_endtime(5561.0)
+system.set_saveinterval(10)
+system.save()
 system.simulateSystem()
 
 # Plotting
-issPositions = np.array(iss.state)[:,3:6]
+#issPositions = np.array(iss.state)[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
 
 earthImageFile = 'pysamss/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
-plotTrajectory(figure, issPositions, (1, 1, 1))
+#plotTrajectory(figure, issPositions, (1, 1, 1))
 
 northeastdownRF = iss.getNorthEastDownRF()
 northeastdownRF.plot(figure, iss.getPosition(), scale_factor=100000)
 
 mlab.view(focalpoint=iss.getPosition(), figure=figure)
+
+mlab.show()

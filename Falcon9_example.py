@@ -96,3 +96,5 @@ plotTrajectory(figure, falcon9Positions, (1, 1, 1))
 falcon9.bodyRF.plot(figure, falcon9.getPosition(), scale_factor=1000)
 
 mlab.view(focalpoint=falcon9.getPosition(), figure=figure)
+
+mlab.show()

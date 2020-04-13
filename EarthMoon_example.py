@@ -28,33 +28,37 @@ earth.setPosition(earth_pos1)
 earth.setVelocity(earth_vel)
 
 # Define Moon
-moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent=earth)
+moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth')
 moon.setPosition(moon_pos1)
 moon.setVelocity(moon_vel)
 moon.setAttitude(euler2quaternion(np.rad2deg([0, 45, 0])))
 
 # Setup System
-system = System()
+system = System('EarthMoon')
 system.addCelestialBody(earth)
 system.addCelestialBody(moon)
 system.set_dt(60.0)
 system.set_endtime(2358720.0)
+system.set_saveinterval(100)
+system.save()
 system.simulateSystem()
 
 # Plotting
-earthPositions = np.array(earth.state)[:,3:6]
-moonPositions = np.array(moon.state)[:,3:6]
+earthPositions = np.array(earth.state)#[:,3:6]
+moonPositions = np.array(moon.state)#[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
 
 earthImageFile = 'pysamss/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
-plotTrajectory(figure, earthPositions, (1, 1, 1))
+#plotTrajectory(figure, earthPositions, (1, 1, 1))
 earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.radius*1.5)
 
 moonImageFile = 'pysamss/plotting/moon.jpg'
 plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
-plotTrajectory(figure, moonPositions, (1, 1, 1))
+#plotTrajectory(figure, moonPositions, (1, 1, 1))
 moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.radius*1.5)
 
 mlab.view(focalpoint=moon.getPosition(), figure=figure)
+
+mlab.show()

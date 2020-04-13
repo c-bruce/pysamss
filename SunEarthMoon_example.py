@@ -1,6 +1,6 @@
-# Date: 24/06/2019
+# Date: 10/01/2020
 # Author: Callum Bruce
-# Orbital ISS example including the Earth and Moon. Simulated using System class.
+# Sun - Earth - Moon Example
 import numpy as np
 from mayavi import mlab
 from pysamss import *
@@ -8,23 +8,32 @@ import datetime
 import julian
 from jplephem.spk import SPK
 
-# Step 1: Setup Celestial Bodies and Vessels
-# Get Earth and Moon positions and velocity from jplephem
+# Get Sun, Earth and Moon positions and velocity from jplephem
 kernel = SPK.open('pysamss/resources/de430.bsp')
 
 time = datetime.datetime.now()
 time1 = julian.to_jd(time)
 time2 = time1 + 1 / (24 * 60 * 60)
-earth_pos1 = kernel[3,399].compute(time1) * 1000
-earth_pos2 = kernel[3,399].compute(time2) * 1000
+
+sun_pos1 = kernel[0,10].compute(time1) * 1000
+sun_pos2 = kernel[0,10].compute(time2) * 1000
+sun_vel = (sun_pos2 - sun_pos1) / 1
+
+earth_pos1 = (kernel[0,3].compute(time1) + kernel[3,399].compute(time1)) * 1000
+earth_pos2 = (kernel[0,3].compute(time2) + kernel[3,399].compute(time2)) * 1000
 earth_vel = (earth_pos2 - earth_pos1) / 1
 
-moon_pos1 = kernel[3,301].compute(time1) * 1000
-moon_pos2 = kernel[3,301].compute(time2) * 1000
+moon_pos1 = (kernel[0,3].compute(time1) + kernel[3,301].compute(time1)) * 1000
+moon_pos2 = (kernel[0,3].compute(time2) + kernel[3,301].compute(time2)) * 1000
 moon_vel = (moon_pos2 - moon_pos1) / 1
 
+# Define Sun
+sun = CelestialBody('Sun', 1.9885e30, 696342e3)
+sun.setPosition(sun_pos1)
+sun.setVelocity(sun_vel)
+
 # Define Earth
-earth = CelestialBody('Earth', 5.972e24, 6.371e6)
+earth = CelestialBody('Earth', 5.972e24, 6.371e6, parent_name='Sun')
 earth.setPosition(earth_pos1)
 earth.setVelocity(earth_vel)
 
@@ -33,31 +42,28 @@ moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth')
 moon.setPosition(moon_pos1)
 moon.setVelocity(moon_vel)
 
-# Define ISS
-stage1 = Stage(419725, 1, 10, [0, 0, 0])
-iss = Vessel('ISS', [stage1], parent_name='Earth')
-#iss.setPosition([earth.radius + 404000, 0, 0], local=True)
-#iss.setVelocity([0, 7660, 0], local=True)
-
-# Step 2: Setup System
-system = System('EarthMoonISS')
+# Setup System
+system = System('SunEarthMoon')
+system.addCelestialBody(sun)
 system.addCelestialBody(earth)
 system.addCelestialBody(moon)
-system.addVessel(iss)
-system.vessels['ISS'].setPosition([earth.radius + 404000, 0, 0], local=True)
-system.vessels['ISS'].setVelocity([0, 7660, 0], local=True)
-system.set_dt(0.1)
-system.set_endtime(5561.0)
-system.set_saveinterval(10)
+system.set_dt(60.0)
+system.set_endtime(31536000.0)
+system.set_saveinterval(100000)
 system.save()
 system.simulateSystem()
 
 # Plotting
+#sunPositions = np.array(sun.state)[:,3:6]
 #earthPositions = np.array(earth.state)[:,3:6]
 #moonPositions = np.array(moon.state)[:,3:6]
-#issPositions = np.array(iss.state)[:,3:6]
 
 figure = mlab.figure(size=(600, 600))
+
+sunImageFile = 'pysamss/plotting/sun.jpg'
+plotCelestialBody(figure, sun.getRadius(), sun.getPosition(), sunImageFile)
+#plotTrajectory(figure, sunPositions, (1, 1, 1))
+earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.radius*1.5)
 
 earthImageFile = 'pysamss/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
@@ -69,11 +75,6 @@ plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
 #plotTrajectory(figure, moonPositions, (1, 1, 1))
 moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.radius*1.5)
 
-#plotTrajectory(figure, issPositions, (1, 1, 1))
-
-northeastdownRF = iss.getNorthEastDownRF()
-northeastdownRF.plot(figure, iss.getPosition(), scale_factor=100000)
-
-mlab.view(focalpoint=iss.getPosition(), figure=figure)
+mlab.view(focalpoint=moon.getPosition(), figure=figure)
 
 mlab.show()
