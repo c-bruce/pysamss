@@ -206,11 +206,11 @@ class System:
             group = f.create_group('celestial_bodies/' + obj.name)
             # Save attributes - alphabetical order
             group.attrs.create('mass', obj.mass)
-            group.attrs.create('name', obj.name)
+            group.attrs.create('name', np.string_(obj.name))
             try:
-                group.attrs.create('parent_name', obj.parent.name)
+                group.attrs.create('parent_name', np.string_(obj.parent.name))
             except AttributeError:
-                group.attrs.create('parent_name', 'None')
+                group.attrs.create('parent_name', np.string_('None'))
             group.attrs.create('radius', obj.radius)
             # Save datasets - alphabetical order
             group.create_dataset('bodyRF_i', data=obj.bodyRF.i)
