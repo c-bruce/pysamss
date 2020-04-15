@@ -11,7 +11,7 @@ class Stage:
         mass (float): Stage mass (kg).
         radius (float): Stage radius (m).
         length (float): Stage length (m).
-        position (list): Stage position relative to referenceFrame [x,y] (m).
+        position (np.array): Stage position relative to Vessel bodyRF np.array([x,y,z]) (m).
 
     Note:
         - Stage objects are assumed cylindrical with CoT 0.5 * length aft of
@@ -24,8 +24,8 @@ class Stage:
         self.wetmass = 0.95 * mass
         self.radius = radius
         self.length = length
-        self.position = np.array(position)
-        self.gimbal = [0, 0] # [theta, psi]
+        self.position = position
+        self.gimbal = np.array([0, 0]) # [theta, psi]
 
     def updateMass(self, m_dot):
         """

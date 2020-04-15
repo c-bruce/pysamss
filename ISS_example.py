@@ -23,7 +23,7 @@ a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(line1, line2, earth)
 
 iss_position, iss_velocity = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, earth)
 
-stage1 = Stage(415699, 1, 10, [0, 0, 0])
+stage1 = Stage(415699, 1, 10, np.array([0, 0, 0]))
 iss = Vessel('ISS', [stage1], parent_name='Earth')
 iss.setPosition(iss_position)
 iss.setVelocity(iss_velocity)

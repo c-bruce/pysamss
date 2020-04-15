@@ -10,9 +10,9 @@ from pysamss import *
 earth = CelestialBody('Earth', 5.972e24, 6.371e6)
 
 # Define Falcon9
-stage1 = Stage(258500, 1.85, 35, [-30.6, 0, 0])
-stage2 = Stage(52000, 1.85, 13.1, [-6.55, 0, 0])
-falcon9 = Vessel('Falcon9', [stage1, stage2], parent=earth)
+stage1 = Stage(258500, 1.85, 35, np.array([-30.6, 0, 0]))
+stage2 = Stage(52000, 1.85, 13.1, np.array([-6.55, 0, 0]))
+falcon9 = Vessel('Falcon9', [stage1, stage2], parent_name='Earth')
 falcon9.setPosition([earth.radius, 0, 0])
 falcon9.updateNorthEastDownRF()
 falcon9.initAttitude()

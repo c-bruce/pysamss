@@ -34,7 +34,7 @@ moon.setPosition(moon_pos1)
 moon.setVelocity(moon_vel)
 
 # Define ISS
-stage1 = Stage(419725, 1, 10, [0, 0, 0])
+stage1 = Stage(419725, 1, 10, np.array([0, 0, 0]))
 iss = Vessel('ISS', [stage1], parent_name='Earth')
 #iss.setPosition([earth.radius + 404000, 0, 0], local=True)
 #iss.setVelocity([0, 7660, 0], local=True)

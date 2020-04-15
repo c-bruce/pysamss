@@ -200,7 +200,7 @@ class System:
                 obj1.addForce(gravityForce)
             # Step 2: Save data - included at this stage so that U is populated
             if i % self.saveinterval == 0:
-                self.saveTimestep(self.save_directory + '/' + str(self.time))
+                self.__saveTimestep(self.save_directory + '/' + str(self.time) + '.h5')
                 self.timesteps.update({self.time : self.save_directory + '/' + str(self.time) + '.h5'})
             # Step 3: Simulate timestep
             # Celestial Bodies:
@@ -213,35 +213,111 @@ class System:
             self.set_time(self.time + self.dt)
             progress = (i / iterations) * 100
             print("Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
+    
+    def __saveReferenceFrame(self, group, reference_frame):
+        """
+        Save ReferenceFrame object to .h5 file.
 
-    def saveTimestep(self, path):
+            Args:
+                group (h5py group): HDF5 file group to save ReferenceFrame object to.
+                reference_frame (obj): ReferenceFrame object to save.
+        """
+        group.attrs.create('name', np.string_(reference_frame.name))
+        group.create_dataset('i', data=reference_frame.i)
+        group.create_dataset('j', data=reference_frame.j)
+        group.create_dataset('k', data=reference_frame.k)
+    
+    def __saveCelestialBody(self, group, celestial_body):
+        """
+        Save CelestialBody object to .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to save CelestialBody object to.
+                celestial_body (obj): CelestialBody object to save.
+        """
+        # Save attributes - alphabetical order
+        group.attrs.create('mass', celestial_body.mass)
+        group.attrs.create('name', np.string_(celestial_body.name))
+        try:
+            group.attrs.create('parent_name', np.string_(celestial_body.parent.name))
+        except AttributeError:
+            group.attrs.create('parent_name', np.string_('None'))
+        group.attrs.create('radius', celestial_body.radius)
+        # Save datasets - alphabetical order
+        group.create_dataset('I', data=celestial_body.I)
+        group.create_dataset('state', data=celestial_body.state)
+        group.create_dataset('U', data=celestial_body.U)
+    
+    def __saveVessel(self, group, vessel):
+        """
+        Save Vessel object to .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to save Vessel object to.
+                vessel (obj): Vessel object to save.
+        """
+        # Save attributes - alphabetical order
+        group.attrs.create('length', vessel.length)
+        group.attrs.create('mass', vessel.mass)
+        group.attrs.create('name', np.string_(vessel.name))
+        try:
+            group.attrs.create('parent_name', np.string_(vessel.parent.name))
+        except AttributeError:
+            group.attrs.create('parent_name', np.string_('None'))
+        # Save datasets - alphabetical order
+        group.create_dataset('CoM', data=vessel.CoM)
+        group.create_dataset('CoT', data=vessel.CoT)
+        group.create_dataset('I', data=vessel.I)
+        group.create_dataset('state', data=vessel.state)
+        group.create_dataset('U', data=vessel.U)
+        # Save vessel stages
+        group.create_group('stages')
+        i = 0
+        for stage in vessel.stages:
+            stage_group = group.create_group('stages/' + str(i))
+            self.__saveStage(stage_group, stage)
+    
+    def __saveStage(self, group, stage):
+        """
+        Save Stage object to .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to save Stage object to.
+                stage (obj): Stage object to save.
+        """
+        # Save attributes - alphabetical order
+        group.attrs.create('drymass', stage.drymass)
+        group.attrs.create('length', stage.length)
+        group.attrs.create('mass', stage.mass)
+        group.attrs.create('radius', stage.radius)
+        group.attrs.create('wetmass', stage.wetmass)
+        # Save datasets - alphabetical order
+        group.create_dataset('gimbal', data=stage.gimbal)
+        group.create_dataset('position', data=stage.position)
+
+    def __saveTimestep(self, path):
         """
         Save timestep to .h5 file.
         """
-        f = h5py.File(path + '.h5', 'a')
-        # Celestial Bodies
+        f = h5py.File(path, 'a')
+        # ReferenceFrame class
+        f.create_group('reference_frames')
+        for reference_frame in self.reference_frames:
+            group = f.create_group('reference_frames/' + self.reference_frames[reference_frame].name)
+            self.__saveReferenceFrame(group, self.reference_frames[reference_frame])
+        # CelestialBody class
         f.create_group('celestial_bodies')
         for celestial_body in self.celestial_bodies:
-            obj = self.celestial_bodies[celestial_body]
-            group = f.create_group('celestial_bodies/' + obj.name)
-            # Save attributes - alphabetical order
-            group.attrs.create('mass', obj.mass)
-            group.attrs.create('name', np.string_(obj.name))
-            try:
-                group.attrs.create('parent_name', np.string_(obj.parent.name))
-            except AttributeError:
-                group.attrs.create('parent_name', np.string_('None'))
-            group.attrs.create('radius', obj.radius)
-            # Save datasets - alphabetical order
-            group.create_dataset('bodyRF_i', data=obj.bodyRF.i)
-            group.create_dataset('bodyRF_j', data=obj.bodyRF.j)
-            group.create_dataset('bodyRF_k', data=obj.bodyRF.k)
-            group.create_dataset('I', data=obj.I)
-            group.create_dataset('state', data=obj.state)
-            group.create_dataset('U', data=obj.U)
+            group = f.create_group('celestial_bodies/' + self.celestial_bodies[celestial_body].name)
+            self.__saveCelestialBody(group, self.celestial_bodies[celestial_body])
+        # Vessel class
+        f.create_group('vessels')
+        for vessel in self.vessels:
+            group = f.create_group('vessels/' + self.vessels[vessel].name)
+            self.__saveVessel(group, self.vessels[vessel])
         f.close()
     
-    def loadTimestep(self, path):
+    def __loadTimestep(self, path):
         """
         Load timestep from .h5 file.
         """
@@ -297,4 +373,4 @@ class System:
             timesteps.append(float(timestep_path[(len(path) + 2):-3]))
         timesteps, timestep_paths = (list(t) for t in zip(*sorted(zip(timesteps, timestep_paths))))
         self.timesteps = dict(zip(timesteps, timestep_paths))
-        self.loadTimestep(list(self.timesteps.values())[-1]) # Load last save timestep
+        self.__loadTimestep(list(self.timesteps.values())[-1]) # Load last save timestep
