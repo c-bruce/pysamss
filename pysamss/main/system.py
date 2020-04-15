@@ -26,28 +26,32 @@ class System:
         celestial_bodies (dict): Dict of CelestialBody objects in system.
         vessels (dict): Dict of Vessel objects in system.
     """
-    def __init__(self, name=None, timesteps=None, celestial_bodies=None, vessels=None):
+    def __init__(self, name, timesteps=None, celestial_bodies=None, vessels=None):
         self.name = name
-        if name != None:
-            self.save_directory = self.name + '_data'
-        self.systemRF = ReferenceFrame()
-        if timesteps == None:
-            self.timesteps = {}
-        else:
-            self.timesteps = timesteps
-        if celestial_bodies == None:
-            self.celestial_bodies = {}
-        else:
-            self.celestial_bodies = celestial_bodies
-        if vessels == None:
-            self.vessels = {}
-        else:
-            self.vessels = vessels
+        self.save_directory = self.name + '_data'
+        self.systemRF = ReferenceFrame(name='SystemRF')
         self.time = 0.0
         self.endtime = 100.0
         self.dt = 0.1
         self.saveinterval = 1
         self.scheme = euler
+        # timesteps dict
+        if timesteps is None:
+            self.timesteps = {}
+        else:
+            self.timesteps = timesteps
+        # reference_frames dict
+        self.reference_frames = {self.systemRF.name : self.systemRF}
+        # celestial_bodies dict
+        if celestial_bodies is None:
+            self.celestial_bodies = {}
+        else:
+            self.celestial_bodies = celestial_bodies
+        # vessels dict
+        if vessels == None:
+            self.vessels = {}
+        else:
+            self.vessels = vessels
     
     def set_time(self, time):
         """
@@ -72,6 +76,15 @@ class System:
         Set save interval - every nth timestep.
         """
         self.saveinterval = saveinterval
+    
+    def addReferenceFrame(self, reference_frame):
+        """
+        Add a ReferenceFrame to the system.
+
+        Args:
+            reference_frame (obj): ReferenceFrame object to add to system.
+        """
+        self.reference_frames[reference_frame.name] = reference_frame
 
     def addCelestialBody(self, celestial_body):
         """
@@ -85,6 +98,8 @@ class System:
             celestial_body.setUniversalRF(self.systemRF)
             celestial_body.setParentRF(self.systemRF)
             celestial_body.setBodyRF(copy.copy(self.systemRF))
+            celestial_body.bodyRF.setName(celestial_body.name + 'RF')
+            self.addReferenceFrame(celestial_body.bodyRF)
             self.celestial_bodies[celestial_body.name] = celestial_body
         else: # Else the body's parentRF is the parents bodyRF
             if celestial_body.parent_name in self.celestial_bodies:
@@ -92,6 +107,8 @@ class System:
                 celestial_body.setUniversalRF(self.systemRF)
                 celestial_body.setParentRF(celestial_body.parent.bodyRF)
                 celestial_body.setBodyRF(copy.copy(celestial_body.parent.bodyRF))
+                celestial_body.bodyRF.setName(celestial_body.name + 'RF')
+                self.addReferenceFrame(celestial_body.bodyRF)
                 self.celestial_bodies[celestial_body.name] = celestial_body
             else:
                 print('Error: Parent "' + celestial_body.parent_name + '" does not exist. Unable to add "' + celestial_body.name + '" to System.')
@@ -103,12 +120,13 @@ class System:
         Args:
             vessel (obj): Vessel object to add to system.
         """
-        #self.vessels[vessel.name] = vessel
         if vessel.parent_name is None: # If there is no parent the body's parentRF is the systemRF
             vessel.setParent(None)
             vessel.setUniversalRF(self.systemRF)
             vessel.setParentRF(self.systemRF)
             vessel.setBodyRF(copy.copy(self.systemRF))
+            vessel.bodyRF.setName(vessel.name + 'RF')
+            self.addReferenceFrame(vessel.bodyRF)
             vessel.initPosition()
             self.vessels[vessel.name] = vessel
         else: # Else the body's parentRF is the parents bodyRF
@@ -117,6 +135,8 @@ class System:
                 vessel.setUniversalRF(self.systemRF)
                 vessel.setParentRF(vessel.parent.bodyRF)
                 vessel.setBodyRF(copy.copy(vessel.parent.bodyRF))
+                vessel.bodyRF.setName(vessel.name + 'RF')
+                self.addReferenceFrame(vessel.bodyRF)
                 vessel.initPosition()
                 self.vessels[vessel.name] = vessel
             else:
