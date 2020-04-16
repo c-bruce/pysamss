@@ -53,6 +53,12 @@ class System:
         else:
             self.vessels = vessels
     
+    def set_name(self, name):
+        """
+        Set system name.
+        """
+        self.name = name
+    
     def set_time(self, time):
         """
         Set system current time [s].
@@ -227,6 +233,25 @@ class System:
         group.create_dataset('j', data=reference_frame.j)
         group.create_dataset('k', data=reference_frame.k)
     
+    def __loadReferenceFrame(self, group):
+        """
+        Load ReferenceFrame object from .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to load ReferenceFrame object to.
+        """
+        # Get data
+        name = group.attrs['name'].decode('UTF-8')
+        i = np.array(group.get('i'))
+        j = np.array(group.get('j'))
+        k = np.array(group.get('k'))
+        # Create ReferenceFrame object
+        reference_frame = ReferenceFrame()
+        reference_frame.setName(name)
+        reference_frame.setIJK(i, j, k)
+        # Add reference_frame to reference_frames dict
+        self.addReferenceFrame(reference_frame)
+    
     def __saveCelestialBody(self, group, celestial_body):
         """
         Save CelestialBody object to .h5 file.
@@ -247,6 +272,26 @@ class System:
         group.create_dataset('I', data=celestial_body.I)
         group.create_dataset('state', data=celestial_body.state)
         group.create_dataset('U', data=celestial_body.U)
+    
+    def __loadCelestialBody(self, group):
+        """
+        Load CelestialBody object to .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to load CelestialBody object from.
+        """
+        # Get data
+        mass = group.attrs['mass']
+        name = group.attrs['name'].decode('UTF-8')
+        parent_name = group.attrs['parent_name'].decode('UTF-8')
+        radius = group.attrs['radius']
+        I = np.array(group.get('I'))
+        state = np.array(group.get('state'))
+        U = np.array(group.get('U'))
+        # Create CelestialBody object
+        celestial_body = CelestialBody(name, mass, radius, state=state, U=U, parent_name=parent_name)
+        # Add celestial_body to selestial_bodies dict
+        self.celestial_bodies[celestial_body.name] = celestial_body
     
     def __saveVessel(self, group, vessel):
         """
@@ -300,6 +345,12 @@ class System:
         Save timestep to .h5 file.
         """
         f = h5py.File(path, 'a')
+        # System class
+        f.attrs.create('name', np.string_(self.name))
+        f.attrs.create('time', self.time)
+        f.attrs.create('endtime', self.endtime)
+        f.attrs.create('dt', self.dt)
+        f.attrs.create('saveinterval', int(self.saveinterval))
         # ReferenceFrame class
         f.create_group('reference_frames')
         for reference_frame in self.reference_frames:
@@ -318,6 +369,27 @@ class System:
         f.close()
     
     def __loadTimestep(self, path):
+        """
+        Load timestep from .h5 file.
+        """
+        f = h5py.File(path, 'r')
+        # System class
+        self.set_name(f.attrs['name'].decode('UTF-8'))
+        self.set_time(f.attrs['time'])
+        self.set_endtime(f.attrs['endtime'])
+        self.set_dt(f.attrs['dt'])
+        self.set_saveinterval(f.attrs['saveinterval'])
+        # ReferenceFrame class
+        for reference_frame in f['reference_frames']:
+            group = f['reference_frames'][reference_frame]
+            self.__loadReferenceFrame(group)
+        # CelestialBody class
+        for celestial_body in f['celestial_bodies']:
+            group = f['celestial_bodies'][celestial_body]
+        # Vessel class
+        # Setup universalRF, parentRF and bodyRF relationships
+    
+    def __loadTimestep2(self, path):
         """
         Load timestep from .h5 file.
         """
@@ -367,6 +439,12 @@ class System:
         Args:
             path (str): Path to *.psm file.
         """
+        # Reset timesteps, reference_frames, celestial_bodies and vessels dicts
+        self.timesteps = {}
+        self.systemRF = ReferenceFrame(name='SystemRF')
+        self.reference_frames = {self.systemRF.name : self.systemRF}
+        self.celestial_bodies = {}
+        self.vessels = {}
         timestep_paths = glob.glob(path[:-4] + '_data/*.h5')
         timesteps = []
         for timestep_path in timestep_paths:
