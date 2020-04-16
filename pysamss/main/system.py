@@ -7,9 +7,10 @@ import itertools
 import h5py
 import glob
 import os
+from .referenceframe import ReferenceFrame
 from .celestialbody import CelestialBody
 from .vessel import Vessel
-from .referenceframe import ReferenceFrame
+from .stage import Stage
 from ..helpermath.helpermath import *
 from ..simulate.simulate import simulate
 from ..simulate.integrationschemes import euler
@@ -238,7 +239,10 @@ class System:
         Load ReferenceFrame object from .h5 file.
 
             Args:
-                group (h5py group): HDF5 file group to load ReferenceFrame object to.
+                group (h5py group): HDF5 file group to load ReferenceFrame object from.
+            
+            Returns:
+                reference_frame (obj): ReferenceFrame object.
         """
         # Get data
         name = group.attrs['name'].decode('UTF-8')
@@ -249,8 +253,7 @@ class System:
         reference_frame = ReferenceFrame()
         reference_frame.setName(name)
         reference_frame.setIJK(i, j, k)
-        # Add reference_frame to reference_frames dict
-        self.addReferenceFrame(reference_frame)
+        return reference_frame        
     
     def __saveCelestialBody(self, group, celestial_body):
         """
@@ -275,23 +278,27 @@ class System:
     
     def __loadCelestialBody(self, group):
         """
-        Load CelestialBody object to .h5 file.
+        Load CelestialBody object from .h5 file.
 
             Args:
                 group (h5py group): HDF5 file group to load CelestialBody object from.
+            
+            Return:
+                celestial_body (obj): CelestialBody object.
         """
         # Get data
         mass = group.attrs['mass']
         name = group.attrs['name'].decode('UTF-8')
         parent_name = group.attrs['parent_name'].decode('UTF-8')
+        if parent_name == 'None':
+            parent_name = None
         radius = group.attrs['radius']
         I = np.array(group.get('I'))
         state = np.array(group.get('state'))
         U = np.array(group.get('U'))
         # Create CelestialBody object
         celestial_body = CelestialBody(name, mass, radius, state=state, U=U, parent_name=parent_name)
-        # Add celestial_body to selestial_bodies dict
-        self.celestial_bodies[celestial_body.name] = celestial_body
+        return celestial_body
     
     def __saveVessel(self, group, vessel):
         """
@@ -322,6 +329,30 @@ class System:
             stage_group = group.create_group('stages/' + str(i))
             self.__saveStage(stage_group, stage)
     
+    def __loadVessel(self, group):
+        """
+        Load Vessel object from .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to load Vessel object from.
+            
+            Returns:
+                vessel (obj): Vessel object.
+        """
+        # Get data
+        name = group.attrs['name'].decode('UTF-8')
+        parent_name = group.attrs['parent_name'].decode('UTF-8')
+        if parent_name == 'None':
+            parent_name = None
+        state = np.array(group.get('state'))
+        U = np.array(group.get('U'))
+        stages = []
+        for stage in group['stages']:
+            stages.append(self.__loadStage(group['stages'][stage]))
+        # Create Vessel object
+        vessel = Vessel(name, stages, state=state, U=U, parent_name=parent_name)
+        return vessel
+    
     def __saveStage(self, group, stage):
         """
         Save Stage object to .h5 file.
@@ -339,6 +370,23 @@ class System:
         # Save datasets - alphabetical order
         group.create_dataset('gimbal', data=stage.gimbal)
         group.create_dataset('position', data=stage.position)
+    
+    def __loadStage(self, group):
+        """
+        Load Stage object from .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to save Stage object from.
+        
+            Returns:
+                stage (obj): Stage object.
+        """
+        mass = group.attrs['mass']
+        radius = group.attrs['radius']
+        length = group.attrs['length']
+        position = np.array(group.get('position'))
+        stage = Stage(mass, radius, length, position)
+        return stage
 
     def __saveTimestep(self, path):
         """
@@ -382,48 +430,20 @@ class System:
         # ReferenceFrame class
         for reference_frame in f['reference_frames']:
             group = f['reference_frames'][reference_frame]
-            self.__loadReferenceFrame(group)
+            new_reference_frame = self.__loadReferenceFrame(group)
+            self.reference_frames[new_reference_frame.name] = new_reference_frame
         # CelestialBody class
         for celestial_body in f['celestial_bodies']:
             group = f['celestial_bodies'][celestial_body]
+            new_celestial_body = self.__loadCelestialBody(group)
+            self.celestial_bodies[new_celestial_body.name] = new_celestial_body
         # Vessel class
+        for vessel in f['vessels']:
+            group = f['vessels'][vessel]
+            new_vessel = self.__loadVessel(group)
+            self.vessels[new_vessel.name] = new_vessel
         # Setup universalRF, parentRF and bodyRF relationships
-    
-    def __loadTimestep2(self, path):
-        """
-        Load timestep from .h5 file.
-        """
-        f = h5py.File(path, 'a')
-        celestial_bodies = {} # Dictionary containing {new_celestial_body : parent (str)} for supporting setting of parents
-        for celestial_body in f['celestial_bodies']:
-            # Load attributes - alphabetical order
-            mass = f['celestial_bodies/' + celestial_body].attrs['mass']
-            name = f['celestial_bodies/' + celestial_body].attrs['name']
-            parent_name = f['celestial_bodies/' + celestial_body].attrs['parent_name']
-            if parent_name == 'None':
-                parent_name = None
-            radius = f['celestial_bodies/' + celestial_body].attrs['radius']
-            # Load datasets - alphabetical order
-            bodyRF_i = np.array(f['celestial_bodies/' + celestial_body].get('bodyRF_i'))
-            bodyRF_j = np.array(f['celestial_bodies/' + celestial_body].get('bodyRF_j'))
-            bodyRF_k = np.array(f['celestial_bodies/' + celestial_body].get('bodyRF_k'))
-            #I = np.array(f['celestial_bodies/' + celestial_body].get('I'))
-            state = np.array(f['celestial_bodies/' + celestial_body].get('state'))
-            #U = np.array(f['celestial_bodies/' + celestial_body].get('U'))
-            # Create celestial body and add it to system
-            new_celestial_body = CelestialBody(name, mass, radius, state=state)
-            new_celestial_body.bodyRF.setIJK(bodyRF_i, bodyRF_j, bodyRF_k)
-            celestial_bodies.update({new_celestial_body : parent_name})
-        # Loop through and add celestial bodies setting parents if they exist
-        for celestial_body in celestial_bodies:
-            parent_name = celestial_bodies[celestial_body]
-            if parent_name != None:
-                for parent in celestial_bodies:
-                    if parent.name == parent_name:
-                        celestial_body.setParent(parent)
-            self.addCelestialBody(celestial_body)
-
-        #set_time
+        # Setup parent relationships
     
     def save(self):
         """
