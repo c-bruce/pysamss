@@ -208,7 +208,7 @@ class System:
             # Step 2: Save data - included at this stage so that U is populated
             if i % self.saveinterval == 0:
                 self.__saveTimestep(self.save_directory + '/' + str(self.time) + '.h5')
-                self.timesteps.update({self.time : self.save_directory + '/' + str(self.time) + '.h5'})
+                #self.timesteps.update({self.time : self.save_directory + '/' + str(self.time) + '.h5'})
             # Step 3: Simulate timestep
             # Celestial Bodies:
             for celestial_body in self.celestial_bodies:
@@ -266,10 +266,10 @@ class System:
         # Save attributes - alphabetical order
         group.attrs.create('mass', celestial_body.mass)
         group.attrs.create('name', np.string_(celestial_body.name))
-        try:
-            group.attrs.create('parent_name', np.string_(celestial_body.parent.name))
-        except AttributeError:
+        if celestial_body.parent_name is None:
             group.attrs.create('parent_name', np.string_('None'))
+        else:
+            group.attrs.create('parent_name', np.string_(celestial_body.parent.name))
         group.attrs.create('radius', celestial_body.radius)
         # Save datasets - alphabetical order
         group.create_dataset('I', data=celestial_body.I)
@@ -293,7 +293,6 @@ class System:
         if parent_name == 'None':
             parent_name = None
         radius = group.attrs['radius']
-        I = np.array(group.get('I'))
         state = np.array(group.get('state'))
         U = np.array(group.get('U'))
         # Create CelestialBody object
@@ -312,10 +311,10 @@ class System:
         group.attrs.create('length', vessel.length)
         group.attrs.create('mass', vessel.mass)
         group.attrs.create('name', np.string_(vessel.name))
-        try:
-            group.attrs.create('parent_name', np.string_(vessel.parent.name))
-        except AttributeError:
+        if vessel.name is None:
             group.attrs.create('parent_name', np.string_('None'))
+        else:
+            group.attrs.create('parent_name', np.string_(vessel.parent.name))
         # Save datasets - alphabetical order
         group.create_dataset('CoM', data=vessel.CoM)
         group.create_dataset('CoT', data=vessel.CoT)
@@ -415,6 +414,7 @@ class System:
             group = f.create_group('vessels/' + self.vessels[vessel].name)
             self.__saveVessel(group, self.vessels[vessel])
         f.close()
+        self.timesteps.update({self.time : self.save_directory + '/' + str(self.time) + '.h5'})
     
     def __loadTimestep(self, path):
         """
@@ -442,15 +442,31 @@ class System:
             group = f['vessels'][vessel]
             new_vessel = self.__loadVessel(group)
             self.vessels[new_vessel.name] = new_vessel
-        # Setup universalRF, parentRF and bodyRF relationships
-        # Setup parent relationships
+        # Setup parent and universalRF, parentRF, bodyRF relationships
+        for celestial_body in self.celestial_bodies:
+            if self.celestial_bodies[celestial_body].parent_name is not None:
+                self.celestial_bodies[celestial_body].setParent(self.celestial_bodies[celestial_body].parent_name)
+                self.celestial_bodies[celestial_body].setParentRF(self.reference_frames[self.celestial_bodies[celestial_body].parent_name + 'RF'])
+            self.celestial_bodies[celestial_body].setUniversalRF(self.systemRF)
+            self.celestial_bodies[celestial_body].setBodyRF(self.reference_frames[self.celestial_bodies[celestial_body].name + 'RF'])
+        for vessel in self.vessels:
+            if self.vessels[vessel].parent_name is not None:
+                self.vessels[vessel].setParent(self.celestial_bodies[self.vessels[vessel].parent_name])
+                self.vessels[vessel].setParentRF(self.reference_frames[self.vessels[vessel].parent_name + 'RF'])
+            self.vessels[vessel].setUniversalRF(self.systemRF)
+            self.vessels[vessel].setBodyRF(self.reference_frames[self.vessels[vessel].name + 'RF'])
     
     def save(self):
         """
         Save system.
         """
-        open(self.name + '.psm', 'a').close() # Save a pointer file system.name.psm
-        os.mkdir(self.save_directory)
+        # Create save file if it does not already exist
+        if not(os.path.exists(self.name + '.psm')):
+            open(self.name + '.psm', 'a').close()
+        # Create save directory if it does not already exist
+        if not(os.path.exists(self.save_directory)):
+            os.mkdir(self.save_directory)
+        # Save current timestep - ask for permission if timestep does already exist
 
     def load(self, path):
         """

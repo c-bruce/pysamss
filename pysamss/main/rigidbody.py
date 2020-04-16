@@ -277,7 +277,6 @@ class RigidBody:
             parent (obj): Rigid body representing parent. Typically a CelestialBody object.
         """
         self.parent = parent
-        #self.setParentRF(parent.bodyRF)
     
     def getUniversalRF(self):
         """
