@@ -9,10 +9,39 @@ class ReferenceFrame:
     ReferenceFrame class.
     """
     def __init__(self, name=None):
+        self.name = name
         self.i = np.array([1, 0, 0])
         self.j = np.array([0, 1, 0])
         self.k = np.array([0, 0, 1])
-        self.name = name
+    
+    def save(self, group):
+        """
+        Save ReferenceFrame object to .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to save ReferenceFrame object to.
+        """
+        group.attrs.create('name', np.string_(self.name))
+        group.create_dataset('i', data=self.i)
+        group.create_dataset('j', data=self.j)
+        group.create_dataset('k', data=self.k)
+
+    def load(self, group):
+        """
+        Load ReferenceFrame object from .h5 file.
+
+            Args:
+                group (h5py group): HDF5 file group to load ReferenceFrame object from.
+            
+            Returns:
+                reference_frame (obj): ReferenceFrame object.
+        """
+        # Get/set data
+        self.setName(group.attrs['name'].decode('UTF-8'))
+        i = np.array(group.get('i'))
+        j = np.array(group.get('j'))
+        k = np.array(group.get('k'))
+        self.setIJK(i, j, k)
 
     def rotate(self, quaternion):
         """

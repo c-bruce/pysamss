@@ -7,6 +7,7 @@ import itertools
 import h5py
 import glob
 import os
+from .timestep import Timestep
 from .referenceframe import ReferenceFrame
 from .celestialbody import CelestialBody
 from .vessel import Vessel
@@ -27,127 +28,133 @@ class System:
         celestial_bodies (dict): Dict of CelestialBody objects in system.
         vessels (dict): Dict of Vessel objects in system.
     """
-    def __init__(self, name, timesteps=None, celestial_bodies=None, vessels=None):
+    def __init__(self, name):
         self.name = name
         self.save_directory = self.name + '_data'
-        self.systemRF = ReferenceFrame(name='SystemRF')
-        self.time = 0.0
-        self.endtime = 100.0
+        self.currenttimestep = Timestep(0.0)
+        self.timesteps = {}
         self.dt = 0.1
+        self.endtime = 100.0
         self.saveinterval = 1
         self.scheme = euler
-        # timesteps dict
-        if timesteps is None:
-            self.timesteps = {}
-        else:
-            self.timesteps = timesteps
-        # reference_frames dict
-        self.reference_frames = {self.systemRF.name : self.systemRF}
-        # celestial_bodies dict
-        if celestial_bodies is None:
-            self.celestial_bodies = {}
-        else:
-            self.celestial_bodies = celestial_bodies
-        # vessels dict
-        if vessels == None:
-            self.vessels = {}
-        else:
-            self.vessels = vessels
+
+    def save(self, path=None):
+        """
+        Save system.
+        """
+        # Create save file if it does not already exist
+        if not(os.path.exists(self.name + '.psm')):
+            open(self.name + '.psm', 'a').close()
+        # Create save directory if it does not already exist
+        if not(os.path.exists(self.save_directory)):
+            os.mkdir(self.save_directory)
+        if path is None:
+            path = self.save_directory + '/' + str(self.currenttimestep.time) + '.h5'
+        f = h5py.File(path, 'a')
+        # System class
+        f.attrs.create('name', np.string_(self.name))
+        f.attrs.create('save_directory', np.string_(self.save_directory))
+        f.attrs.create('dt', self.dt)
+        f.attrs.create('endtime', self.endtime)
+        f.attrs.create('saveinterval', int(self.saveinterval))
+        self.currenttimestep.save(f)
+        f.close()
+
+    def load(self, path):
+        """
+        Load system.
+
+        Args:
+            path (str): Path to *.psm file.
+        """
+        timestep_paths = glob.glob(path[:-4] + '_data/*.h5')
+        timesteps = []
+        for timestep_path in timestep_paths:
+            timesteps.append(float(timestep_path[(len(path) + 2):-3]))
+        timesteps, timestep_paths = (list(t) for t in zip(*sorted(zip(timesteps, timestep_paths))))
+        timesteps = dict(zip(timesteps, timestep_paths))
+        path = list(timesteps.values())[-1]
+        f = h5py.File(path, 'r')
+        self.currenttimestep.load(f) # Load last save timestep
+        f.close()
     
-    def set_name(self, name):
+    def getName(self):
+        """
+        Get system name.
+
+        Returns:
+            name (str): System name.
+        """
+        return self.name
+
+    def setName(self, name):
         """
         Set system name.
+
+        Args:
+            name (str): System name.
         """
         self.name = name
     
-    def set_time(self, time):
+    def getEndTime(self):
         """
-        Set system current time [s].
-        """
-        self.time = time
+        Get system endtime.
 
-    def set_endtime(self, endtime):
+        Returns:
+            endtime (str): System endtime.
+        """
+        return self.endtime
+
+    def setEndTime(self, endtime):
         """
         Set system end time [s].
+
+        Args:
+            endtime (str): System endtime.
         """
         self.endtime = endtime
 
-    def set_dt(self, dt):
+    def getDt(self):
+        """
+        Get timestep, dt [s].
+
+        Returns:
+            dt (float): System dt.
+        """
+        return self.dt
+    
+    def setDt(self, dt):
         """
         Set timestep, dt [s].
+
+        Args:
+            dt (float): System dt.
         """
         self.dt = dt
     
-    def set_saveinterval(self, saveinterval):
+    def getSaveInterval(self):
+        """
+        Get save interval - every nth timestep.
+
+        Returns:
+            saveinterval (float): System saveinterval.
+        """
+        return self.saveinterval
+    
+    def setSaveInterval(self, saveinterval):
         """
         Set save interval - every nth timestep.
+
+        Args:
+            saveinterval (float): System saveinterval.
         """
         self.saveinterval = saveinterval
     
-    def addReferenceFrame(self, reference_frame):
+    def setScheme(self, scheme):
         """
-        Add a ReferenceFrame to the system.
-
-        Args:
-            reference_frame (obj): ReferenceFrame object to add to system.
+        Set integration scheme to use for simulating the system.
         """
-        self.reference_frames[reference_frame.name] = reference_frame
-
-    def addCelestialBody(self, celestial_body):
-        """
-        Add a CelestialBody to the system.
-
-        Args:
-            celestial_body (obj): CelestialBody object to add to system.
-        """
-        if celestial_body.parent_name is None: # If there is no parent the body's parentRF is the systemRF
-            celestial_body.setParent(None)
-            celestial_body.setUniversalRF(self.systemRF)
-            celestial_body.setParentRF(self.systemRF)
-            celestial_body.setBodyRF(copy.copy(self.systemRF))
-            celestial_body.bodyRF.setName(celestial_body.name + 'RF')
-            self.addReferenceFrame(celestial_body.bodyRF)
-            self.celestial_bodies[celestial_body.name] = celestial_body
-        else: # Else the body's parentRF is the parents bodyRF
-            if celestial_body.parent_name in self.celestial_bodies:
-                celestial_body.setParent(self.celestial_bodies[celestial_body.parent_name])
-                celestial_body.setUniversalRF(self.systemRF)
-                celestial_body.setParentRF(celestial_body.parent.bodyRF)
-                celestial_body.setBodyRF(copy.copy(celestial_body.parent.bodyRF))
-                celestial_body.bodyRF.setName(celestial_body.name + 'RF')
-                self.addReferenceFrame(celestial_body.bodyRF)
-                self.celestial_bodies[celestial_body.name] = celestial_body
-            else:
-                print('Error: Parent "' + celestial_body.parent_name + '" does not exist. Unable to add "' + celestial_body.name + '" to System.')
-        
-    def addVessel(self, vessel):
-        """
-        Add a Vessel to the system.
-
-        Args:
-            vessel (obj): Vessel object to add to system.
-        """
-        if vessel.parent_name is None: # If there is no parent the body's parentRF is the systemRF
-            vessel.setParent(None)
-            vessel.setUniversalRF(self.systemRF)
-            vessel.setParentRF(self.systemRF)
-            vessel.setBodyRF(copy.copy(self.systemRF))
-            vessel.bodyRF.setName(vessel.name + 'RF')
-            self.addReferenceFrame(vessel.bodyRF)
-            vessel.initPosition()
-            self.vessels[vessel.name] = vessel
-        else: # Else the body's parentRF is the parents bodyRF
-            if vessel.parent_name in self.celestial_bodies:
-                vessel.setParent(self.celestial_bodies[vessel.parent_name])
-                vessel.setUniversalRF(self.systemRF)
-                vessel.setParentRF(vessel.parent.bodyRF)
-                vessel.setBodyRF(copy.copy(vessel.parent.bodyRF))
-                vessel.bodyRF.setName(vessel.name + 'RF')
-                self.addReferenceFrame(vessel.bodyRF)
-                vessel.initPosition()
-                self.vessels[vessel.name] = vessel
-            else:
-                print('Error: Parent "' + vessel.parent_name + '" does not exist. Unable to add "' + vessel.name + '" to System.')
+        self.scheme = scheme
 
     def getCelestialBodyInteractions(self):
         """
@@ -156,7 +163,7 @@ class System:
         Returns:
             celestial_body_interactions (list): List of CelestialBody interactions.
         """
-        celestial_body_interactions = list(itertools.combinations(list(self.celestial_bodies.keys()), 2))
+        celestial_body_interactions = list(itertools.combinations(list(self.currenttimestep.celestial_bodies.keys()), 2))
         celestial_body_interactions = [list(celestial_body_interactions[i]) for i in range(0, len(celestial_body_interactions))]
         return celestial_body_interactions
 
@@ -167,19 +174,13 @@ class System:
         Returns:
             vessels_interactions (list): List of Vessel interactions.
         """
-        celestial_bodies = list(self.celestial_bodies.keys())
-        vessels = list(self.vessels.keys())
+        celestial_bodies = list(self.currenttimestep.celestial_bodies.keys())
+        vessels = list(self.currenttimestep.vessels.keys())
         vessels_interactions = []
         for vessel in vessels:
             for celestial_body in celestial_bodies:
                 vessels_interactions.append([celestial_body, vessel])
         return vessels_interactions
-
-    def setScheme(self, scheme):
-        """
-        Set integration scheme to use for simulating the system.
-        """
-        self.scheme = scheme
 
     def simulateSystem(self):
         """
@@ -187,304 +188,35 @@ class System:
         """
         celestial_body_interactions = self.getCelestialBodyInteractions()
         vessels_interactions = self.getVesselsInteractions()
-        iterations = int((self.endtime - self.time) / self.dt)
+        iterations = int((self.endtime - self.currenttimestep.time) / self.dt)
         for i in range(0, iterations):
             # Step 1: Calculate forces
             # Celestial Bodies:
             ## Gravity
             for interaction in celestial_body_interactions:
-                obj0 = self.celestial_bodies[interaction[0]]
-                obj1 = self.celestial_bodies[interaction[1]]
+                obj0 = self.currenttimestep.celestial_bodies[interaction[0]]
+                obj1 = self.currenttimestep.celestial_bodies[interaction[1]]
                 gravityForce = gravity(obj0, obj1)
                 obj0.addForce(-gravityForce)
                 obj1.addForce(gravityForce)
             # Vessels:
             ## Gravity
             for interaction in vessels_interactions:
-                obj0 = self.celestial_bodies[interaction[0]]
-                obj1 = self.vessels[interaction[1]]
+                obj0 = self.currenttimestep.celestial_bodies[interaction[0]]
+                obj1 = self.currenttimestep.vessels[interaction[1]]
                 gravityForce = gravity(obj0, obj1)
                 obj1.addForce(gravityForce)
             # Step 2: Save data - included at this stage so that U is populated
             if i % self.saveinterval == 0:
-                self.__saveTimestep(self.save_directory + '/' + str(self.time) + '.h5')
-                #self.timesteps.update({self.time : self.save_directory + '/' + str(self.time) + '.h5'})
+                self.save()
             # Step 3: Simulate timestep
             # Celestial Bodies:
-            for celestial_body in self.celestial_bodies:
-                simulate(self.celestial_bodies[celestial_body], self.scheme, self.dt)
+            for celestial_body in self.currenttimestep.celestial_bodies:
+                simulate(self.currenttimestep.celestial_bodies[celestial_body], self.scheme, self.dt)
             # Vessels:
-            for vessel in self.vessels:
-                simulate(self.vessels[vessel], self.scheme, self.dt)
+            for vessel in self.currenttimestep.vessels:
+                simulate(self.currenttimestep.vessels[vessel], self.scheme, self.dt)
             # Step 4: Iterate on time
-            self.set_time(self.time + self.dt)
+            self.currenttimestep.setTime(self.currenttimestep.time + self.dt)
             progress = (i / iterations) * 100
             print("Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
-    
-    def __saveReferenceFrame(self, group, reference_frame):
-        """
-        Save ReferenceFrame object to .h5 file.
-
-            Args:
-                group (h5py group): HDF5 file group to save ReferenceFrame object to.
-                reference_frame (obj): ReferenceFrame object to save.
-        """
-        group.attrs.create('name', np.string_(reference_frame.name))
-        group.create_dataset('i', data=reference_frame.i)
-        group.create_dataset('j', data=reference_frame.j)
-        group.create_dataset('k', data=reference_frame.k)
-    
-    def __loadReferenceFrame(self, group):
-        """
-        Load ReferenceFrame object from .h5 file.
-
-            Args:
-                group (h5py group): HDF5 file group to load ReferenceFrame object from.
-            
-            Returns:
-                reference_frame (obj): ReferenceFrame object.
-        """
-        # Get data
-        name = group.attrs['name'].decode('UTF-8')
-        i = np.array(group.get('i'))
-        j = np.array(group.get('j'))
-        k = np.array(group.get('k'))
-        # Create ReferenceFrame object
-        reference_frame = ReferenceFrame()
-        reference_frame.setName(name)
-        reference_frame.setIJK(i, j, k)
-        return reference_frame        
-    
-    def __saveCelestialBody(self, group, celestial_body):
-        """
-        Save CelestialBody object to .h5 file.
-
-            Args:
-                group (h5py group): HDF5 file group to save CelestialBody object to.
-                celestial_body (obj): CelestialBody object to save.
-        """
-        # Save attributes - alphabetical order
-        group.attrs.create('mass', celestial_body.mass)
-        group.attrs.create('name', np.string_(celestial_body.name))
-        if celestial_body.parent_name is None:
-            group.attrs.create('parent_name', np.string_('None'))
-        else:
-            group.attrs.create('parent_name', np.string_(celestial_body.parent.name))
-        group.attrs.create('radius', celestial_body.radius)
-        # Save datasets - alphabetical order
-        group.create_dataset('I', data=celestial_body.I)
-        group.create_dataset('state', data=celestial_body.state)
-        group.create_dataset('U', data=celestial_body.U)
-    
-    def __loadCelestialBody(self, group):
-        """
-        Load CelestialBody object from .h5 file.
-
-            Args:
-                group (h5py group): HDF5 file group to load CelestialBody object from.
-            
-            Return:
-                celestial_body (obj): CelestialBody object.
-        """
-        # Get data
-        mass = group.attrs['mass']
-        name = group.attrs['name'].decode('UTF-8')
-        parent_name = group.attrs['parent_name'].decode('UTF-8')
-        if parent_name == 'None':
-            parent_name = None
-        radius = group.attrs['radius']
-        state = np.array(group.get('state'))
-        U = np.array(group.get('U'))
-        # Create CelestialBody object
-        celestial_body = CelestialBody(name, mass, radius, state=state, U=U, parent_name=parent_name)
-        return celestial_body
-    
-    def __saveVessel(self, group, vessel):
-        """
-        Save Vessel object to .h5 file.
-
-            Args:
-                group (h5py group): HDF5 file group to save Vessel object to.
-                vessel (obj): Vessel object to save.
-        """
-        # Save attributes - alphabetical order
-        group.attrs.create('length', vessel.length)
-        group.attrs.create('mass', vessel.mass)
-        group.attrs.create('name', np.string_(vessel.name))
-        if vessel.name is None:
-            group.attrs.create('parent_name', np.string_('None'))
-        else:
-            group.attrs.create('parent_name', np.string_(vessel.parent.name))
-        # Save datasets - alphabetical order
-        group.create_dataset('CoM', data=vessel.CoM)
-        group.create_dataset('CoT', data=vessel.CoT)
-        group.create_dataset('I', data=vessel.I)
-        group.create_dataset('state', data=vessel.state)
-        group.create_dataset('U', data=vessel.U)
-        # Save vessel stages
-        group.create_group('stages')
-        i = 0
-        for stage in vessel.stages:
-            stage_group = group.create_group('stages/' + str(i))
-            self.__saveStage(stage_group, stage)
-    
-    def __loadVessel(self, group):
-        """
-        Load Vessel object from .h5 file.
-
-            Args:
-                group (h5py group): HDF5 file group to load Vessel object from.
-            
-            Returns:
-                vessel (obj): Vessel object.
-        """
-        # Get data
-        name = group.attrs['name'].decode('UTF-8')
-        parent_name = group.attrs['parent_name'].decode('UTF-8')
-        if parent_name == 'None':
-            parent_name = None
-        state = np.array(group.get('state'))
-        U = np.array(group.get('U'))
-        stages = []
-        for stage in group['stages']:
-            stages.append(self.__loadStage(group['stages'][stage]))
-        # Create Vessel object
-        vessel = Vessel(name, stages, state=state, U=U, parent_name=parent_name)
-        return vessel
-    
-    def __saveStage(self, group, stage):
-        """
-        Save Stage object to .h5 file.
-
-            Args:
-                group (h5py group): HDF5 file group to save Stage object to.
-                stage (obj): Stage object to save.
-        """
-        # Save attributes - alphabetical order
-        group.attrs.create('drymass', stage.drymass)
-        group.attrs.create('length', stage.length)
-        group.attrs.create('mass', stage.mass)
-        group.attrs.create('radius', stage.radius)
-        group.attrs.create('wetmass', stage.wetmass)
-        # Save datasets - alphabetical order
-        group.create_dataset('gimbal', data=stage.gimbal)
-        group.create_dataset('position', data=stage.position)
-    
-    def __loadStage(self, group):
-        """
-        Load Stage object from .h5 file.
-
-            Args:
-                group (h5py group): HDF5 file group to save Stage object from.
-        
-            Returns:
-                stage (obj): Stage object.
-        """
-        mass = group.attrs['mass']
-        radius = group.attrs['radius']
-        length = group.attrs['length']
-        position = np.array(group.get('position'))
-        stage = Stage(mass, radius, length, position)
-        return stage
-
-    def __saveTimestep(self, path):
-        """
-        Save timestep to .h5 file.
-        """
-        f = h5py.File(path, 'a')
-        # System class
-        f.attrs.create('name', np.string_(self.name))
-        f.attrs.create('time', self.time)
-        f.attrs.create('endtime', self.endtime)
-        f.attrs.create('dt', self.dt)
-        f.attrs.create('saveinterval', int(self.saveinterval))
-        # ReferenceFrame class
-        f.create_group('reference_frames')
-        for reference_frame in self.reference_frames:
-            group = f.create_group('reference_frames/' + self.reference_frames[reference_frame].name)
-            self.__saveReferenceFrame(group, self.reference_frames[reference_frame])
-        # CelestialBody class
-        f.create_group('celestial_bodies')
-        for celestial_body in self.celestial_bodies:
-            group = f.create_group('celestial_bodies/' + self.celestial_bodies[celestial_body].name)
-            self.__saveCelestialBody(group, self.celestial_bodies[celestial_body])
-        # Vessel class
-        f.create_group('vessels')
-        for vessel in self.vessels:
-            group = f.create_group('vessels/' + self.vessels[vessel].name)
-            self.__saveVessel(group, self.vessels[vessel])
-        f.close()
-        self.timesteps.update({self.time : self.save_directory + '/' + str(self.time) + '.h5'})
-    
-    def __loadTimestep(self, path):
-        """
-        Load timestep from .h5 file.
-        """
-        f = h5py.File(path, 'r')
-        # System class
-        self.set_name(f.attrs['name'].decode('UTF-8'))
-        self.set_time(f.attrs['time'])
-        self.set_endtime(f.attrs['endtime'])
-        self.set_dt(f.attrs['dt'])
-        self.set_saveinterval(f.attrs['saveinterval'])
-        # ReferenceFrame class
-        for reference_frame in f['reference_frames']:
-            group = f['reference_frames'][reference_frame]
-            new_reference_frame = self.__loadReferenceFrame(group)
-            self.reference_frames[new_reference_frame.name] = new_reference_frame
-        # CelestialBody class
-        for celestial_body in f['celestial_bodies']:
-            group = f['celestial_bodies'][celestial_body]
-            new_celestial_body = self.__loadCelestialBody(group)
-            self.celestial_bodies[new_celestial_body.name] = new_celestial_body
-        # Vessel class
-        for vessel in f['vessels']:
-            group = f['vessels'][vessel]
-            new_vessel = self.__loadVessel(group)
-            self.vessels[new_vessel.name] = new_vessel
-        # Setup parent and universalRF, parentRF, bodyRF relationships
-        for celestial_body in self.celestial_bodies:
-            if self.celestial_bodies[celestial_body].parent_name is not None:
-                self.celestial_bodies[celestial_body].setParent(self.celestial_bodies[celestial_body].parent_name)
-                self.celestial_bodies[celestial_body].setParentRF(self.reference_frames[self.celestial_bodies[celestial_body].parent_name + 'RF'])
-            self.celestial_bodies[celestial_body].setUniversalRF(self.systemRF)
-            self.celestial_bodies[celestial_body].setBodyRF(self.reference_frames[self.celestial_bodies[celestial_body].name + 'RF'])
-        for vessel in self.vessels:
-            if self.vessels[vessel].parent_name is not None:
-                self.vessels[vessel].setParent(self.celestial_bodies[self.vessels[vessel].parent_name])
-                self.vessels[vessel].setParentRF(self.reference_frames[self.vessels[vessel].parent_name + 'RF'])
-            self.vessels[vessel].setUniversalRF(self.systemRF)
-            self.vessels[vessel].setBodyRF(self.reference_frames[self.vessels[vessel].name + 'RF'])
-    
-    def save(self):
-        """
-        Save system.
-        """
-        # Create save file if it does not already exist
-        if not(os.path.exists(self.name + '.psm')):
-            open(self.name + '.psm', 'a').close()
-        # Create save directory if it does not already exist
-        if not(os.path.exists(self.save_directory)):
-            os.mkdir(self.save_directory)
-        # Save current timestep - ask for permission if timestep does already exist
-
-    def load(self, path):
-        """
-        Load system.
-
-        Args:
-            path (str): Path to *.psm file.
-        """
-        # Reset timesteps, reference_frames, celestial_bodies and vessels dicts
-        self.timesteps = {}
-        self.systemRF = ReferenceFrame(name='SystemRF')
-        self.reference_frames = {self.systemRF.name : self.systemRF}
-        self.celestial_bodies = {}
-        self.vessels = {}
-        timestep_paths = glob.glob(path[:-4] + '_data/*.h5')
-        timesteps = []
-        for timestep_path in timestep_paths:
-            timesteps.append(float(timestep_path[(len(path) + 2):-3]))
-        timesteps, timestep_paths = (list(t) for t in zip(*sorted(zip(timesteps, timestep_paths))))
-        self.timesteps = dict(zip(timesteps, timestep_paths))
-        self.__loadTimestep(list(self.timesteps.values())[-1]) # Load last save timestep

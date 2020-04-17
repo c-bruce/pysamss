@@ -19,7 +19,7 @@ class RigidBody:
         - CelestialBody and Vessel classes derive the bulk of their methods
           from RigidBody class.
     """
-    def __init__(self, name, state=None, U=None, parent_name=None):
+    def __init__(self, name=None, state=None, U=None, parent_name=None):
         self.name = name
         if state is None:
             self.state = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
@@ -34,6 +34,42 @@ class RigidBody:
         self.bodyRF = None
         self.parent_name = parent_name
         self.parent = None
+    
+    def getName(self):
+        """
+        Get RigidBody name.
+
+        Returns:
+            name (str): RigidBody name.
+        """
+        return self.name
+    
+    def setName(self, name):
+        """
+        Set RigidBody name.
+
+        Args:
+            name (str): RigidBody name.
+        """
+        self.name = name
+    
+    def getParentName(self):
+        """
+        Get RigidBody parent_name.
+
+        Returns:
+            parent_name (str): RigidBody parent name.
+        """
+        return self.parent_name
+    
+    def setParentName(self, parent_name):
+        """
+        Set RigidBody parent_name.
+
+        Returns:
+            parent_name (str): RigidBody parent name.
+        """
+        self.parent_name = parent_name
 
     def getState(self):
         """
@@ -346,3 +382,39 @@ class RigidBody:
             chain.append(chain[-1].parent)
         chain = chain[:-1]
         return chain
+    
+    def getMass(self):
+        """
+        Get mass.
+
+        Returns:
+            mass (float): CelestialBody mass.
+        """
+        return self.mass
+    
+    def setMass(self, mass):
+        """
+        Get mass.
+
+        Args:
+            mass (float): CelestialBody mass.
+        """
+        self.mass = mass
+    
+    def getI(self):
+        """
+        Get inertia matrix I.
+
+        Returns:
+            I (np.array): CelestialBody inertia matrix.
+        """
+        return self.I
+    
+    def setI(self, I):
+        """
+        Set inertia matrix I.
+
+        Args:
+            I (np.array): CelestialBody inertia matrix.
+        """
+        self.I = I
