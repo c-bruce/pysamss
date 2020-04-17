@@ -16,7 +16,7 @@ class Timestep:
     """
     Timestep class.
     """
-    def __init__(self, time):
+    def __init__(self, time=0.0):
         self.time = time
         self.universalRF = ReferenceFrame(name='UniversalRF')
         self.reference_frames = {self.universalRF.name : self.universalRF}
@@ -82,7 +82,7 @@ class Timestep:
         # Setup parent and universalRF, parentRF, bodyRF relationships
         self.setRelationships()
     
-    def getTime(self, time):
+    def getTime(self):
         """
         Set time [s].
 
@@ -120,19 +120,19 @@ class Timestep:
 
     def addReferenceFrame(self, reference_frame):
         """
-        Add a ReferenceFrame to the system.
+        Add a ReferenceFrame to the Timestep.
 
         Args:
-            reference_frame (obj): ReferenceFrame object to add to system.
+            reference_frame (obj): ReferenceFrame object to add to Timestep.
         """
         self.reference_frames[reference_frame.name] = reference_frame
 
     def addCelestialBody(self, celestial_body):
         """
-        Add a CelestialBody to the system.
+        Add a CelestialBody to the Timestep.
 
         Args:
-            celestial_body (obj): CelestialBody object to add to system.
+            celestial_body (obj): CelestialBody object to add to Timestep.
         """
         if celestial_body.parent_name is None: # If there is no parent the body's parentRF is the universalRF
             celestial_body.setParent(None)
@@ -156,10 +156,10 @@ class Timestep:
         
     def addVessel(self, vessel):
         """
-        Add a Vessel to the system.
+        Add a Vessel to the Timestep.
 
         Args:
-            vessel (obj): Vessel object to add to system.
+            vessel (obj): Vessel object to add to Timestep.
         """
         if vessel.parent_name is None: # If there is no parent the body's parentRF is the universalRF
             vessel.setParent(None)

@@ -31,8 +31,8 @@ class System:
     def __init__(self, name):
         self.name = name
         self.save_directory = self.name + '_data'
-        self.currenttimestep = Timestep(0.0)
-        self.timesteps = {}
+        self.timesteps = {'current' : Timestep()}
+        self.currenttimestep = self.timesteps['current']
         self.dt = 0.1
         self.endtime = 100.0
         self.saveinterval = 1
@@ -59,24 +59,30 @@ class System:
         f.attrs.create('saveinterval', int(self.saveinterval))
         self.currenttimestep.save(f)
         f.close()
-
-    def load(self, path):
+    
+    def load(self, path, getAll=True):
         """
-        Load system.
+        Load system data.
 
         Args:
             path (str): Path to *.psm file.
+            getAll (bool): Load all data boolean. Default = True.
         """
         timestep_paths = glob.glob(path[:-4] + '_data/*.h5')
-        timesteps = []
-        for timestep_path in timestep_paths:
-            timesteps.append(float(timestep_path[(len(path) + 2):-3]))
-        timesteps, timestep_paths = (list(t) for t in zip(*sorted(zip(timesteps, timestep_paths))))
-        timesteps = dict(zip(timesteps, timestep_paths))
-        path = list(timesteps.values())[-1]
-        f = h5py.File(path, 'r')
-        self.currenttimestep.load(f) # Load last save timestep
-        f.close()
+        if getAll:
+            for timestep_path in timestep_paths:
+                f = h5py.File(timestep_path, 'r')
+                new_timestep = Timestep()
+                new_timestep.load(f)
+                f.close()
+                self.timesteps[new_timestep.time] = new_timestep
+        else:
+            timestep_path = timestep_paths[-1]
+            f = h5py.File(timestep_path, 'r')
+            new_timestep = Timestep()
+            new_timestep.load(f)
+            f.close()
+            self.timesteps[new_timestep.time] = new_timestep
     
     def getName(self):
         """
@@ -95,6 +101,15 @@ class System:
             name (str): System name.
         """
         self.name = name
+    
+    def addTimestep(self, timestep):
+        """
+        Add a Timestep to the system.
+
+        Args:
+            timestep (obj): Timestep object to add to system.
+        """
+        self.timesteps[timestep.time] = timestep
     
     def getEndTime(self):
         """

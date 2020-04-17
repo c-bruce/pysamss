@@ -22,11 +22,12 @@ class Vessel(RigidBody):
     def __init__(self, name=None, stages=[], state=None, U=None, parent_name=None):
         RigidBody.__init__(self, name=name, state=state, U=U, parent_name=parent_name)
         self.stages = stages
-        self.mass = self.getMass()
-        self.length = self.getLength()
-        self.I = self.calculateI()
-        self.CoM = self.getCoM()
-        self.CoT = self.getCoT()
+        if self.stages: # if self.stages isn't empty
+            self.mass = self.getMass()
+            self.length = self.getLength()
+            self.I = self.calculateI()
+            self.CoM = self.getCoM()
+            self.CoT = self.getCoT()
         self.northeastdownRF = None
     
     def save(self, group):
