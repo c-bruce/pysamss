@@ -31,8 +31,8 @@ class System:
     def __init__(self, name):
         self.name = name
         self.save_directory = self.name + '_data'
-        self.timesteps = {'current' : Timestep()}
-        self.currenttimestep = self.timesteps['current']
+        self.currenttimestep = Timestep()
+        self.timesteps = {self.currenttimestep.time : self.currenttimestep}
         self.dt = 0.1
         self.endtime = 100.0
         self.saveinterval = 1
@@ -68,6 +68,9 @@ class System:
             path (str): Path to *.psm file.
             getAll (bool): Load all data boolean. Default = True.
         """
+        # Reset timesteps dict
+        self.timesteps = {}
+        # Load data into timesteps dict
         timestep_paths = glob.glob(path[:-4] + '_data/*.h5')
         if getAll:
             for timestep_path in timestep_paths:
@@ -83,6 +86,8 @@ class System:
             new_timestep.load(f)
             f.close()
             self.timesteps[new_timestep.time] = new_timestep
+        # Set current timestep to the last one in timesteps dict
+        self.setCurrentTimestep(self.timesteps[max(list(self.timesteps.keys()))])
     
     def getName(self):
         """
@@ -101,6 +106,24 @@ class System:
             name (str): System name.
         """
         self.name = name
+    
+    def getCurrentTimestep(self):
+        """
+        Get the System current Timestep.
+
+        Returns:
+            currenttimestep (obj): System current Timestep.
+        """
+        return self.currenttimestep
+    
+    def setCurrentTimestep(self, timestep):
+        """
+        Set the System current Timestep.
+
+        Args:
+            timestep (obj): Timestep to set System current timestep to.
+        """
+        self.currenttimestep = timestep
     
     def addTimestep(self, timestep):
         """

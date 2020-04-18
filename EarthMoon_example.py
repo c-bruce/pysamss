@@ -8,6 +8,7 @@ import datetime
 import julian
 from jplephem.spk import SPK
 
+# Step 1: Setup Celestial Bodies
 # Get Earth and Moon positions and velocity from jplephem
 kernel = SPK.open('pysamss/resources/de430.bsp')
 
@@ -24,41 +25,50 @@ moon_vel = (moon_pos2 - moon_pos1) / 1
 
 # Define Earth
 earth = CelestialBody('Earth', 5.972e24, 6.371e6)
-earth.setPosition(earth_pos1)
-earth.setVelocity(earth_vel)
 
 # Define Moon
 moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth')
-moon.setPosition(moon_pos1)
-moon.setVelocity(moon_vel)
-moon.setAttitude(euler2quaternion(np.rad2deg([0, 45, 0])))
 
-# Setup System
+# Step 2: Setup and run System
 system = System('EarthMoon')
-system.addCelestialBody(earth)
-system.addCelestialBody(moon)
-system.set_dt(60.0)
-system.set_endtime(2358720.0)
-system.set_saveinterval(100)
-system.save()
+system.currenttimestep.addCelestialBody(earth)
+system.currenttimestep.addCelestialBody(moon)
+system.currenttimestep.celestial_bodies['Earth'].setPosition(earth_pos1)
+system.currenttimestep.celestial_bodies['Earth'].setVelocity(earth_vel)
+system.currenttimestep.celestial_bodies['Moon'].setPosition(moon_pos1)
+system.currenttimestep.celestial_bodies['Moon'].setVelocity(moon_vel)
+system.setDt(60.0)
+system.setEndTime(2358720.0)
+system.setSaveInterval(100)
 system.simulateSystem()
 
-# Plotting
-earthPositions = np.array(earth.state)#[:,3:6]
-moonPositions = np.array(moon.state)#[:,3:6]
+# Step 3: Post Processing
+# Step 3.1: Load data
+system.load('EarthMoon.psm')
 
+# Step 3.2: Get Earth, Moon and ISS position data
+timesteps = sorted(list(system.timesteps.keys()))
+earthPositions = np.empty([len(timesteps), 3])
+moonPositions = np.empty([len(timesteps), 3])
+for i in range(0, len(timesteps)):
+    earthPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Earth'].getPosition()
+    moonPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Moon'].getPosition()
+earth = system.currenttimestep.celestial_bodies['Earth']
+moon = system.currenttimestep.celestial_bodies['Moon']
+
+# Step 3.3: Plotting
 figure = mlab.figure(size=(600, 600))
 
 earthImageFile = 'pysamss/plotting/earth.jpg'
 plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
-#plotTrajectory(figure, earthPositions, (1, 1, 1))
-earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.radius*1.5)
+plotTrajectory(figure, earthPositions, (1, 1, 1))
+earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.getRadius()*1.5)
 
 moonImageFile = 'pysamss/plotting/moon.jpg'
 plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
-#plotTrajectory(figure, moonPositions, (1, 1, 1))
-moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.radius*1.5)
+plotTrajectory(figure, moonPositions, (1, 1, 1))
+moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.getRadius()*1.5)
 
-mlab.view(focalpoint=moon.getPosition(), figure=figure)
+mlab.view(focalpoint=earth.getPosition(), figure=figure)
 
 mlab.show()
