@@ -35,15 +35,15 @@ iss = Vessel('ISS', [stage1], parent_name='Earth')
 
 # Step 2: Setup and run System
 system = System('EarthMoonISS')
-system.currenttimestep.addCelestialBody(earth)
-system.currenttimestep.addCelestialBody(moon)
-system.currenttimestep.addVessel(iss)
-system.currenttimestep.celestial_bodies['Earth'].setPosition(earth_pos1)
-system.currenttimestep.celestial_bodies['Earth'].setVelocity(earth_vel)
-system.currenttimestep.celestial_bodies['Moon'].setPosition(moon_pos1)
-system.currenttimestep.celestial_bodies['Moon'].setVelocity(moon_vel)
-system.currenttimestep.vessels['ISS'].setPosition([earth.radius + 404000, 0, 0], local=True)
-system.currenttimestep.vessels['ISS'].setVelocity([0, 7660, 0], local=True)
+system.current.addCelestialBody(earth)
+system.current.addCelestialBody(moon)
+system.current.addVessel(iss)
+system.current.celestial_bodies['Earth'].setPosition(earth_pos1)
+system.current.celestial_bodies['Earth'].setVelocity(earth_vel)
+system.current.celestial_bodies['Moon'].setPosition(moon_pos1)
+system.current.celestial_bodies['Moon'].setVelocity(moon_vel)
+system.current.vessels['ISS'].setPosition([earth.radius + 404000, 0, 0], local=True)
+system.current.vessels['ISS'].setVelocity([0, 7660, 0], local=True)
 system.setDt(0.1)
 system.setEndTime(5561.0)
 system.setSaveInterval(10)
@@ -62,9 +62,9 @@ for i in range(0, len(timesteps)):
     earthPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Earth'].getPosition()
     moonPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Moon'].getPosition()
     issPositions[i,:] = system.timesteps[timesteps[i]].vessels['ISS'].getPosition()
-earth = system.currenttimestep.celestial_bodies['Earth']
-moon = system.currenttimestep.celestial_bodies['Moon']
-iss = system.currenttimestep.vessels['ISS']
+earth = system.current.celestial_bodies['Earth']
+moon = system.current.celestial_bodies['Moon']
+iss = system.current.vessels['ISS']
 
 # Step 3.3: Plotting
 figure = mlab.figure(size=(600, 600))

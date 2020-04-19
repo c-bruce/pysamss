@@ -31,12 +31,12 @@ moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth')
 
 # Step 2: Setup and run System
 system = System('EarthMoon')
-system.currenttimestep.addCelestialBody(earth)
-system.currenttimestep.addCelestialBody(moon)
-system.currenttimestep.celestial_bodies['Earth'].setPosition(earth_pos1)
-system.currenttimestep.celestial_bodies['Earth'].setVelocity(earth_vel)
-system.currenttimestep.celestial_bodies['Moon'].setPosition(moon_pos1)
-system.currenttimestep.celestial_bodies['Moon'].setVelocity(moon_vel)
+system.current.addCelestialBody(earth)
+system.current.addCelestialBody(moon)
+system.current.celestial_bodies['Earth'].setPosition(earth_pos1)
+system.current.celestial_bodies['Earth'].setVelocity(earth_vel)
+system.current.celestial_bodies['Moon'].setPosition(moon_pos1)
+system.current.celestial_bodies['Moon'].setVelocity(moon_vel)
 system.setDt(60.0)
 system.setEndTime(2358720.0)
 system.setSaveInterval(100)
@@ -53,8 +53,8 @@ moonPositions = np.empty([len(timesteps), 3])
 for i in range(0, len(timesteps)):
     earthPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Earth'].getPosition()
     moonPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Moon'].getPosition()
-earth = system.currenttimestep.celestial_bodies['Earth']
-moon = system.currenttimestep.celestial_bodies['Moon']
+earth = system.current.celestial_bodies['Earth']
+moon = system.current.celestial_bodies['Moon']
 
 # Step 3.3: Plotting
 figure = mlab.figure(size=(600, 600))

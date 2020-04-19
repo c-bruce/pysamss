@@ -31,8 +31,8 @@ class System:
     def __init__(self, name):
         self.name = name
         self.save_directory = self.name + '_data'
-        self.currenttimestep = Timestep()
-        self.timesteps = {self.currenttimestep.time : self.currenttimestep}
+        self.current = Timestep()
+        self.timesteps = {self.current.time : self.current}
         self.dt = 0.1
         self.endtime = 100.0
         self.saveinterval = 1
@@ -49,7 +49,7 @@ class System:
         if not(os.path.exists(self.save_directory)):
             os.mkdir(self.save_directory)
         if path is None:
-            path = self.save_directory + '/' + str(self.currenttimestep.time) + '.h5'
+            path = self.save_directory + '/' + str(self.current.time) + '.h5'
         f = h5py.File(path, 'a')
         # System class
         f.attrs.create('name', np.string_(self.name))
@@ -57,7 +57,7 @@ class System:
         f.attrs.create('dt', self.dt)
         f.attrs.create('endtime', self.endtime)
         f.attrs.create('saveinterval', int(self.saveinterval))
-        self.currenttimestep.save(f)
+        self.current.save(f)
         f.close()
     
     def load(self, path, getAll=True):
@@ -73,12 +73,17 @@ class System:
         # Load data into timesteps dict
         timestep_paths = glob.glob(path[:-4] + '_data/*.h5')
         if getAll:
+            i = 0
             for timestep_path in timestep_paths:
                 f = h5py.File(timestep_path, 'r')
                 new_timestep = Timestep()
                 new_timestep.load(f)
                 f.close()
                 self.timesteps[new_timestep.time] = new_timestep
+                i += 1
+                progress = (i / len(timestep_paths)) * 100
+                print("Load; Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
+            print('\n')
         else:
             timestep_path = timestep_paths[-1]
             f = h5py.File(timestep_path, 'r')
@@ -87,7 +92,7 @@ class System:
             f.close()
             self.timesteps[new_timestep.time] = new_timestep
         # Set current timestep to the last one in timesteps dict
-        self.setCurrentTimestep(self.timesteps[max(list(self.timesteps.keys()))])
+        self.setCurrent(self.timesteps[max(list(self.timesteps.keys()))])
     
     def getName(self):
         """
@@ -107,23 +112,23 @@ class System:
         """
         self.name = name
     
-    def getCurrentTimestep(self):
+    def getCurrent(self):
         """
         Get the System current Timestep.
 
         Returns:
-            currenttimestep (obj): System current Timestep.
+            current (obj): System current Timestep.
         """
-        return self.currenttimestep
+        return self.current
     
-    def setCurrentTimestep(self, timestep):
+    def setCurrent(self, timestep):
         """
         Set the System current Timestep.
 
         Args:
             timestep (obj): Timestep to set System current timestep to.
         """
-        self.currenttimestep = timestep
+        self.current = timestep
     
     def addTimestep(self, timestep):
         """
@@ -201,7 +206,7 @@ class System:
         Returns:
             celestial_body_interactions (list): List of CelestialBody interactions.
         """
-        celestial_body_interactions = list(itertools.combinations(list(self.currenttimestep.celestial_bodies.keys()), 2))
+        celestial_body_interactions = list(itertools.combinations(list(self.current.celestial_bodies.keys()), 2))
         celestial_body_interactions = [list(celestial_body_interactions[i]) for i in range(0, len(celestial_body_interactions))]
         return celestial_body_interactions
 
@@ -212,8 +217,8 @@ class System:
         Returns:
             vessels_interactions (list): List of Vessel interactions.
         """
-        celestial_bodies = list(self.currenttimestep.celestial_bodies.keys())
-        vessels = list(self.currenttimestep.vessels.keys())
+        celestial_bodies = list(self.current.celestial_bodies.keys())
+        vessels = list(self.current.vessels.keys())
         vessels_interactions = []
         for vessel in vessels:
             for celestial_body in celestial_bodies:
@@ -226,22 +231,22 @@ class System:
         """
         celestial_body_interactions = self.getCelestialBodyInteractions()
         vessels_interactions = self.getVesselsInteractions()
-        iterations = int((self.endtime - self.currenttimestep.time) / self.dt)
+        iterations = int((self.endtime - self.current.time) / self.dt)
         for i in range(0, iterations):
             # Step 1: Calculate forces
             # Celestial Bodies:
             ## Gravity
             for interaction in celestial_body_interactions:
-                obj0 = self.currenttimestep.celestial_bodies[interaction[0]]
-                obj1 = self.currenttimestep.celestial_bodies[interaction[1]]
+                obj0 = self.current.celestial_bodies[interaction[0]]
+                obj1 = self.current.celestial_bodies[interaction[1]]
                 gravityForce = gravity(obj0, obj1)
                 obj0.addForce(-gravityForce)
                 obj1.addForce(gravityForce)
             # Vessels:
             ## Gravity
             for interaction in vessels_interactions:
-                obj0 = self.currenttimestep.celestial_bodies[interaction[0]]
-                obj1 = self.currenttimestep.vessels[interaction[1]]
+                obj0 = self.current.celestial_bodies[interaction[0]]
+                obj1 = self.current.vessels[interaction[1]]
                 gravityForce = gravity(obj0, obj1)
                 obj1.addForce(gravityForce)
             # Step 2: Save data - included at this stage so that U is populated
@@ -249,12 +254,13 @@ class System:
                 self.save()
             # Step 3: Simulate timestep
             # Celestial Bodies:
-            for celestial_body in self.currenttimestep.celestial_bodies:
-                simulate(self.currenttimestep.celestial_bodies[celestial_body], self.scheme, self.dt)
+            for celestial_body in self.current.celestial_bodies:
+                simulate(self.current.celestial_bodies[celestial_body], self.scheme, self.dt)
             # Vessels:
-            for vessel in self.currenttimestep.vessels:
-                simulate(self.currenttimestep.vessels[vessel], self.scheme, self.dt)
+            for vessel in self.current.vessels:
+                simulate(self.current.vessels[vessel], self.scheme, self.dt)
             # Step 4: Iterate on time
-            self.currenttimestep.setTime(self.currenttimestep.time + self.dt)
+            self.current.setTime(self.current.time + self.dt)
             progress = (i / iterations) * 100
-            print("Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
+            print("Simulate System; Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
+        print('\n')
