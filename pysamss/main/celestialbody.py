@@ -2,7 +2,10 @@
 # Author: Callum Bruce
 # CelestialBody Class
 import numpy as np
+import os
 import copy
+from tvtk.api import tvtk # python wrappers for the C++ vtk ecosystem
+import shutil
 from .rigidbody import RigidBody
 from .referenceframe import ReferenceFrame
 from ..helpermath.helpermath import *
@@ -24,6 +27,8 @@ class CelestialBody(RigidBody):
         self.mass = mass
         self.radius = radius
         self.I = self.calculateI()
+        self.texture = None
+        self.actor = self.setActor()
     
     def save(self, group):
         """
@@ -43,6 +48,10 @@ class CelestialBody(RigidBody):
         else:
             group.attrs.create('parent_name', np.string_(self.parent.name))
         group.create_dataset('I', data=self.I)
+        if self.texture is None:
+            group.attrs.create('texture', np.string_('None'))
+        else:
+            group.attrs.create('texture', np.string_(self.name + '_texture.jpg'))
 
     def load(self, group):
         """
@@ -61,6 +70,12 @@ class CelestialBody(RigidBody):
         if parent_name == 'None':
             parent_name = None
         self.setParentName(parent_name)
+        texture = group.attrs['texture'].decode('UTF-8')
+        if texture == 'None':
+            self.texture = None
+        else:
+            self.setTexture(texture)
+        self.setActor()
     
     def getRadius(self):
         """
@@ -91,3 +106,54 @@ class CelestialBody(RigidBody):
                       [0.0, (2 / 5) * self.mass * self.radius**2, 0.0],
                       [0.0, 0.0, (2 / 5) * self.mass * self.radius**2]])
         return I
+    
+    def getTexture(self):
+        """
+        Get texture.
+
+        Returns:
+            texture (tvtk.Texture): CelestialBody texture.
+        """
+        return self.texture
+
+    def setTexture(self, image):
+        """
+        Set CelestialBody tvtk texture.
+
+        Args:
+            image (string): String specifying .jpeg for body texture.
+        """
+        if not(os.path.exists(self.name + '_texture.jpg')):
+            shutil.copyfile(image, self.name + '_texture.jpg')
+        img = tvtk.JPEGReader()
+        img.file_name = self.name + '_texture.jpg'
+        self.texture = tvtk.Texture(input_connection=img.output_port, interpolate=1)
+        self.setActor()
+    
+    def getActor(self):
+        """
+        Get CelestialBody tvtk actor.
+        """
+        return self.actor
+
+    def setActor(self):
+        """
+        Set CelestialBody tvtk actor.
+
+        Note:
+            -   Defaults to a white sphere if self.texture is None.
+        """
+        Nrad = 180
+        position = self.getPosition()
+        attitude = quaternion2euler(self.getAttitude())
+        if self.texture is None:
+            p = tvtk.Property(color=(1, 1, 1))
+            sphere = tvtk.SphereSource(radius=self.radius, theta_resolution=Nrad, phi_resolution=Nrad)
+            sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
+            sphere_actor = tvtk.Actor(mapper=sphere_mapper, property=p) # Pipeline - actor
+        else:
+            sphere = tvtk.TexturedSphereSource(radius=self.radius, theta_resolution=Nrad, phi_resolution=Nrad) # Pipeline - source
+            sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
+            sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=self.texture, orientation=attitude) # Pipeline - actor
+        sphere_actor.add_position(position) # Pipeline - actor.add_position
+        self.actor = sphere_actor

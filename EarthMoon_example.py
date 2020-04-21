@@ -35,8 +35,10 @@ system.current.addCelestialBody(earth)
 system.current.addCelestialBody(moon)
 system.current.celestial_bodies['Earth'].setPosition(earth_pos1)
 system.current.celestial_bodies['Earth'].setVelocity(earth_vel)
+system.current.celestial_bodies['Earth'].setTexture('pysamss/plotting/earth.jpg')
 system.current.celestial_bodies['Moon'].setPosition(moon_pos1)
 system.current.celestial_bodies['Moon'].setVelocity(moon_vel)
+system.current.celestial_bodies['Moon'].setTexture('pysamss/plotting/moon.jpg')
 system.setDt(60.0)
 system.setEndTime(2358720.0)
 system.setSaveInterval(100)
@@ -59,13 +61,11 @@ moon = system.current.celestial_bodies['Moon']
 # Step 3.3: Plotting
 figure = mlab.figure(size=(600, 600))
 
-earthImageFile = 'pysamss/plotting/earth.jpg'
-plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
+figure.scene.add_actor(earth.actor)
 plotTrajectory(figure, earthPositions, (1, 1, 1))
 earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.getRadius()*1.5)
 
-moonImageFile = 'pysamss/plotting/moon.jpg'
-plotCelestialBody(figure, moon.getRadius(), moon.getPosition(), moonImageFile)
+figure.scene.add_actor(moon.actor)
 plotTrajectory(figure, moonPositions, (1, 1, 1))
 moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.getRadius()*1.5)
 
