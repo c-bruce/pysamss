@@ -7,6 +7,8 @@ import itertools
 import h5py
 import glob
 import os
+import julian
+import datetime
 from .referenceframe import ReferenceFrame
 from .celestialbody import CelestialBody
 from .vessel import Vessel
@@ -15,9 +17,20 @@ from .stage import Stage
 class Timestep:
     """
     Timestep class.
+
+    Args:
+        time (float): Simulation time [s]. Default time = 0.0.
+        datetime (obj): Datetime object. Default datetime = 2020-03-20 03:50:00 (2020 vernal equinox).
     """
-    def __init__(self, time=0.0):
-        self.time = time
+    def __init__(self, time=None, date_time=None):
+        if time is None:
+            self.time = 0.0
+        else:
+            self.time = time
+        if date_time is None:
+            self.date_time = datetime.datetime(2020, 3, 20, 3, 50)
+        else:
+            self.date_time = date_time
         self.universalRF = ReferenceFrame(name='UniversalRF')
         self.reference_frames = {self.universalRF.name : self.universalRF}
         self.celestial_bodies = {}
@@ -30,8 +43,8 @@ class Timestep:
         Args:
             f (hdf5 file): HDF5 file to save to.
         """
-        #f = h5py.File(path, 'a')
         f.attrs.create('time', self.time)
+        f.attrs.create('juliandate', julian.to_jd(self.date_time))
         # ReferenceFrame class
         f.create_group('reference_frames')
         for reference_frame in self.reference_frames:
@@ -61,6 +74,7 @@ class Timestep:
         self.vessels = {}
         # Get/set data
         self.setTime(f.attrs['time'])
+        self.setDatetime(julian.from_jd(f.attrs['juliandate']))
         # ReferenceFrame class
         for reference_frame in f['reference_frames']:
             group = f['reference_frames'][reference_frame]
@@ -84,7 +98,7 @@ class Timestep:
     
     def getTime(self):
         """
-        Set time [s].
+        Get time [s].
 
         Returns:
             time (float): Timestep time.
@@ -99,6 +113,24 @@ class Timestep:
             time (float): Timestep time.
         """
         self.time = time
+    
+    def getDatetime(self):
+        """
+        Get date_time.
+
+        Returns:
+            date_time (obj): Timestep date_time.
+        """
+        return self.date_time
+    
+    def setDatetime(self, date_time):
+        """
+        Set date_time.
+
+        Args:
+            date_time (obj): date_time to set for Timestep.
+        """
+        self.date_time = date_time
         
     def setRelationships(self):
         """

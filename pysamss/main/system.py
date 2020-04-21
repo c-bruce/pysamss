@@ -7,6 +7,8 @@ import itertools
 import h5py
 import glob
 import os
+import datetime
+import julian
 from .timestep import Timestep
 from .referenceframe import ReferenceFrame
 from .celestialbody import CelestialBody
@@ -24,9 +26,6 @@ class System:
 
     Args:
         name (str): System name. Used to create *_data folder.
-        timesteps (dict): Dict of system timesteps.
-        celestial_bodies (dict): Dict of CelestialBody objects in system.
-        vessels (dict): Dict of Vessel objects in system.
     """
     def __init__(self, name):
         self.name = name
@@ -261,6 +260,7 @@ class System:
                 simulate(self.current.vessels[vessel], self.scheme, self.dt)
             # Step 4: Iterate on time
             self.current.setTime(self.current.time + self.dt)
+            self.current.setDatetime(self.current.date_time + datetime.timedelta(0, self.dt))
             progress = (i / iterations) * 100
             print("Simulate System; Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
         print('\n')
