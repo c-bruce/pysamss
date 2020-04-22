@@ -31,14 +31,15 @@ moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth')
 
 # Step 2: Setup and run System
 system = System('EarthMoon')
+#system.setTexture('pysamss/resources/starmap_galactic.jpg')
 system.current.addCelestialBody(earth)
 system.current.addCelestialBody(moon)
 system.current.celestial_bodies['Earth'].setPosition(earth_pos1)
 system.current.celestial_bodies['Earth'].setVelocity(earth_vel)
-system.current.celestial_bodies['Earth'].setTexture('pysamss/plotting/earth.jpg')
+system.current.celestial_bodies['Earth'].setTexture('pysamss/resources/earth.jpg')
 system.current.celestial_bodies['Moon'].setPosition(moon_pos1)
 system.current.celestial_bodies['Moon'].setVelocity(moon_vel)
-system.current.celestial_bodies['Moon'].setTexture('pysamss/plotting/moon.jpg')
+system.current.celestial_bodies['Moon'].setTexture('pysamss/resources/moon.jpg')
 system.setDt(60.0)
 system.setEndTime(2358720.0)
 system.setSaveInterval(100)
@@ -60,6 +61,8 @@ moon = system.current.celestial_bodies['Moon']
 
 # Step 3.3: Plotting
 figure = mlab.figure(size=(600, 600))
+
+#figure.scene.add_actor(system.actor)
 
 figure.scene.add_actor(earth.actor)
 plotTrajectory(figure, earthPositions, (1, 1, 1))

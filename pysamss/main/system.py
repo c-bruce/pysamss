@@ -7,6 +7,8 @@ import itertools
 import h5py
 import glob
 import os
+from tvtk.api import tvtk # python wrappers for the C++ vtk ecosystem
+import shutil
 import datetime
 import julian
 from .timestep import Timestep
@@ -36,6 +38,8 @@ class System:
         self.endtime = 100.0
         self.saveinterval = 1
         self.scheme = euler
+        self.texture = None
+        self.actor = self.setActor()
 
     def save(self, path=None):
         """
@@ -56,6 +60,10 @@ class System:
         f.attrs.create('dt', self.dt)
         f.attrs.create('endtime', self.endtime)
         f.attrs.create('saveinterval', int(self.saveinterval))
+        if self.texture is None:
+            f.attrs.create('texture', np.string_('None'))
+        else:
+            f.attrs.create('texture', np.string_(self.name + '_starmap_texture.jpg'))
         self.current.save(f)
         f.close()
     
@@ -68,15 +76,26 @@ class System:
             getAll (bool): Load all data boolean. Default = True.
         """
         # Reset timesteps dict
+        self.setName(path[:-4])
+        self.save_directory = self.name + '_data'
         self.timesteps = {}
         # Load data into timesteps dict
-        timestep_paths = glob.glob(path[:-4] + '_data/*.h5')
+        timestep_paths = glob.glob(self.save_directory + '/*.h5')
         if getAll:
             i = 0
             for timestep_path in timestep_paths:
                 f = h5py.File(timestep_path, 'r')
                 new_timestep = Timestep()
                 new_timestep.load(f)
+                if i == len(timestep_paths):
+                    self.setDt(f.attrs['dt'])
+                    self.setEndTime(f.attrs['endtime'])
+                    self.setSaveInterval(f.attrs['saveinterval'])
+                    texture = f.attrs['texture'].decode('UTF-8')
+                    if texture == 'None':
+                        self.texture = None
+                    else:
+                        self.setTexture(texture)
                 f.close()
                 self.timesteps[new_timestep.time] = new_timestep
                 i += 1
@@ -88,6 +107,14 @@ class System:
             f = h5py.File(timestep_path, 'r')
             new_timestep = Timestep()
             new_timestep.load(f)
+            self.setDt(f.attrs['dt'])
+            self.setEndTime(f.attrs['endtime'])
+            self.setSaveInterval(f.attrs['saveinterval'])
+            texture = f.attrs['texture'].decode('UTF-8')
+            if texture == 'None':
+                self.texture = None
+            else:
+                self.setTexture(texture)
             f.close()
             self.timesteps[new_timestep.time] = new_timestep
         # Set current timestep to the last one in timesteps dict
@@ -264,3 +291,46 @@ class System:
             progress = (i / iterations) * 100
             print("Simulate System; Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
         print('\n')
+    
+    def setTexture(self, image):
+        """
+        Set System tvtk starmap texture.
+
+        Args:
+            image (string): String specifying .jpeg for body texture.
+        """
+        if not(os.path.exists(self.name + '_starmap_texture.jpg')):
+            shutil.copyfile(image, self.name + '_starmap_texture.jpg')
+        img = tvtk.JPEGReader()
+        img.file_name = self.name + '_starmap_texture.jpg'
+        self.texture = tvtk.Texture(input_connection=img.output_port, interpolate=1)
+        self.setActor()
+    
+    def getActor(self):
+        """
+        Get System tvtk actor.
+        """
+        return self.actor
+
+    def setActor(self):
+        """
+        Set System tvtk actor.
+
+        Note:
+            -   Defaults to a white sphere if self.texture is None.
+        """
+        Nrad = 180
+        position = np.array([0.0, 0.0, 0.0])
+        attitude = np.array([0.0, 0.0, 0.0])
+        radius = 1e9
+        if self.texture is None:
+            p = tvtk.Property(color=(1, 1, 1))
+            sphere = tvtk.SphereSource(radius=radius, theta_resolution=Nrad, phi_resolution=Nrad)
+            sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
+            sphere_actor = tvtk.Actor(mapper=sphere_mapper, property=p) # Pipeline - actor
+        else:
+            sphere = tvtk.TexturedSphereSource(radius=radius, theta_resolution=Nrad, phi_resolution=Nrad) # Pipeline - source
+            sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
+            sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=self.texture, orientation=attitude) # Pipeline - actor
+        sphere_actor.add_position(position) # Pipeline - actor.add_position
+        self.actor = sphere_actor
