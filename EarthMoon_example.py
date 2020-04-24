@@ -36,6 +36,7 @@ system.current.addCelestialBody(earth)
 system.current.addCelestialBody(moon)
 system.current.celestial_bodies['Earth'].setPosition(earth_pos1)
 system.current.celestial_bodies['Earth'].setVelocity(earth_vel)
+system.current.celestial_bodies['Earth'].setAttitudeDot(np.array([0.0, 0.0, np.deg2rad(360/((23*60*60) + (56*60) + 4))]))
 system.current.celestial_bodies['Earth'].setTexture('pysamss/resources/earth.jpg')
 system.current.celestial_bodies['Moon'].setPosition(moon_pos1)
 system.current.celestial_bodies['Moon'].setVelocity(moon_vel)
@@ -75,3 +76,21 @@ moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.getRadius()*1.5)
 mlab.view(focalpoint=earth.getPosition(), figure=figure)
 
 mlab.show()
+
+def updateScene(timestep_int):
+    keys = list(system.timesteps.keys())
+    keys.sort()
+    # Remove old actor(s)
+    figure.scene.remove_actor(system.timesteps[keys[timestep_int-1]].celestial_bodies['Earth'].actor)
+    # Define and add new actor(s)
+    earthactor = system.timesteps[keys[timestep_int]].celestial_bodies['Earth'].actor
+    figure.scene.add_actor(earthactor)
+    mlab.view(focalpoint=system.timesteps[keys[timestep_int]].celestial_bodies['Earth'].getPosition(),
+              distance=system.timesteps[keys[timestep_int]].celestial_bodies['Earth'].getRadius()*5,
+              figure=figure)
+
+figure = mlab.figure(size=(600, 600))
+figure.scene.add_actor(system.timesteps[0.0].celestial_bodies['Earth'].actor)
+for i in range(1,394):
+    updateScene(i)
+    input('Press any key...')

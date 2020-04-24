@@ -145,7 +145,7 @@ class CelestialBody(RigidBody):
         """
         Nrad = 180
         position = self.getPosition()
-        attitude = quaternion2euler(self.getAttitude())
+        attitude = np.rad2deg(quaternion2euler(self.getAttitude()))
         if self.texture is None:
             p = tvtk.Property(color=(1, 1, 1))
             sphere = tvtk.SphereSource(radius=self.radius, theta_resolution=Nrad, phi_resolution=Nrad)
