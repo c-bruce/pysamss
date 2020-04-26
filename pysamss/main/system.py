@@ -33,15 +33,13 @@ class System:
         self.name = name
         self.save_directory = self.name + '_data'
         self.current = Timestep()
-        self.timesteps = {self.current.time : self.current}
+        self.timesteps = {0 : self.current}
         self.dt = 0.1
         self.endtime = 100.0
         self.saveinterval = 1
         self.scheme = euler
-        self.texture = None
-        self.actor = self.setActor()
 
-    def save(self, path=None):
+    def save(self):
         """
         Save system.
         """
@@ -51,8 +49,7 @@ class System:
         # Create save directory if it does not already exist
         if not(os.path.exists(self.save_directory)):
             os.mkdir(self.save_directory)
-        if path is None:
-            path = self.save_directory + '/' + str(self.current.time) + '.h5'
+        path = self.save_directory + '/' + str(int(self.current.savefile)) + '.h5'
         f = h5py.File(path, 'a')
         # System class
         f.attrs.create('name', np.string_(self.name))
@@ -60,10 +57,6 @@ class System:
         f.attrs.create('dt', self.dt)
         f.attrs.create('endtime', self.endtime)
         f.attrs.create('saveinterval', int(self.saveinterval))
-        if self.texture is None:
-            f.attrs.create('texture', np.string_('None'))
-        else:
-            f.attrs.create('texture', np.string_(self.name + '_starmap_texture.jpg'))
         self.current.save(f)
         f.close()
     
@@ -91,13 +84,8 @@ class System:
                     self.setDt(f.attrs['dt'])
                     self.setEndTime(f.attrs['endtime'])
                     self.setSaveInterval(f.attrs['saveinterval'])
-                    texture = f.attrs['texture'].decode('UTF-8')
-                    if texture == 'None':
-                        self.texture = None
-                    else:
-                        self.setTexture(texture)
                 f.close()
-                self.timesteps[new_timestep.time] = new_timestep
+                self.timesteps[new_timestep.savefile] = new_timestep
                 i += 1
                 progress = (i / len(timestep_paths)) * 100
                 print("Load; Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
@@ -110,11 +98,6 @@ class System:
             self.setDt(f.attrs['dt'])
             self.setEndTime(f.attrs['endtime'])
             self.setSaveInterval(f.attrs['saveinterval'])
-            texture = f.attrs['texture'].decode('UTF-8')
-            if texture == 'None':
-                self.texture = None
-            else:
-                self.setTexture(texture)
             f.close()
             self.timesteps[new_timestep.time] = new_timestep
         # Set current timestep to the last one in timesteps dict
@@ -203,7 +186,7 @@ class System:
     
     def getSaveInterval(self):
         """
-        Get save interval - every nth timestep.
+        Get saveinterval - every nth timestep.
 
         Returns:
             saveinterval (float): System saveinterval.
@@ -212,7 +195,7 @@ class System:
     
     def setSaveInterval(self, saveinterval):
         """
-        Set save interval - every nth timestep.
+        Set saveinterval - every nth timestep.
 
         Args:
             saveinterval (float): System saveinterval.
@@ -277,6 +260,7 @@ class System:
                 obj1.addForce(gravityForce)
             # Step 2: Save data - included at this stage so that U is populated
             if i % self.saveinterval == 0:
+                self.current.setSaveFile(int(i / self.saveinterval))
                 self.save()
             # Step 3: Simulate timestep
             # Celestial Bodies:
@@ -291,46 +275,3 @@ class System:
             progress = (i / iterations) * 100
             print("Simulate System; Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
         print('\n')
-    
-    def setTexture(self, image):
-        """
-        Set System tvtk starmap texture.
-
-        Args:
-            image (string): String specifying .jpeg for body texture.
-        """
-        if not(os.path.exists(self.name + '_starmap_texture.jpg')):
-            shutil.copyfile(image, self.name + '_starmap_texture.jpg')
-        img = tvtk.JPEGReader()
-        img.file_name = self.name + '_starmap_texture.jpg'
-        self.texture = tvtk.Texture(input_connection=img.output_port, interpolate=1)
-        self.setActor()
-    
-    def getActor(self):
-        """
-        Get System tvtk actor.
-        """
-        return self.actor
-
-    def setActor(self):
-        """
-        Set System tvtk actor.
-
-        Note:
-            -   Defaults to a white sphere if self.texture is None.
-        """
-        Nrad = 180
-        position = np.array([0.0, 0.0, 0.0])
-        attitude = np.array([0.0, 0.0, 0.0])
-        radius = 1e9
-        if self.texture is None:
-            p = tvtk.Property(color=(1, 1, 1))
-            sphere = tvtk.SphereSource(radius=radius, theta_resolution=Nrad, phi_resolution=Nrad)
-            sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
-            sphere_actor = tvtk.Actor(mapper=sphere_mapper, property=p) # Pipeline - actor
-        else:
-            sphere = tvtk.TexturedSphereSource(radius=radius, theta_resolution=Nrad, phi_resolution=Nrad) # Pipeline - source
-            sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
-            sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=self.texture, orientation=attitude) # Pipeline - actor
-        sphere_actor.add_position(position) # Pipeline - actor.add_position
-        self.actor = sphere_actor

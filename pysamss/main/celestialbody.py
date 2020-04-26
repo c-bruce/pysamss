@@ -22,13 +22,15 @@ class CelestialBody(RigidBody):
         U (np.array): U vector [Fx, Fy, Fz, Mx, My, Mz].
         parent_name (str): Name of parent RigidBody object.
     """
-    def __init__(self, name=None, mass=0.0, radius=0.0, state=None, U=None, parent_name=None):
+    def __init__(self, name=None, mass=0.0, radius=0.0, state=None, U=None, parent_name=None, texture=None):
         RigidBody.__init__(self, name=name, state=state, U=U, parent_name=parent_name)
         self.mass = mass
         self.radius = radius
         self.I = self.calculateI()
-        self.texture = None
-        self.actor = self.setActor()
+        if texture is not None:
+            self.texture = self.setTexture(texture)
+        else:
+            self.texture = None
     
     def save(self, group):
         """
@@ -75,7 +77,6 @@ class CelestialBody(RigidBody):
             self.texture = None
         else:
             self.setTexture(texture)
-        self.setActor()
     
     def getRadius(self):
         """
@@ -128,17 +129,10 @@ class CelestialBody(RigidBody):
         img = tvtk.JPEGReader()
         img.file_name = self.name + '_texture.jpg'
         self.texture = tvtk.Texture(input_connection=img.output_port, interpolate=1)
-        self.setActor()
     
     def getActor(self):
         """
         Get CelestialBody tvtk actor.
-        """
-        return self.actor
-
-    def setActor(self):
-        """
-        Set CelestialBody tvtk actor.
 
         Note:
             -   Defaults to a white sphere if self.texture is None.
@@ -156,4 +150,4 @@ class CelestialBody(RigidBody):
             sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
             sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=self.texture, orientation=attitude) # Pipeline - actor
         sphere_actor.add_position(position) # Pipeline - actor.add_position
-        self.actor = sphere_actor
+        return sphere_actor

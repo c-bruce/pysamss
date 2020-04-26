@@ -31,6 +31,7 @@ class Timestep:
             self.date_time = datetime.datetime(2020, 3, 20, 3, 50)
         else:
             self.date_time = date_time
+        self.savefile = None
         self.universalRF = ReferenceFrame(name='UniversalRF')
         self.reference_frames = {self.universalRF.name : self.universalRF}
         self.celestial_bodies = {}
@@ -45,6 +46,7 @@ class Timestep:
         """
         f.attrs.create('time', self.time)
         f.attrs.create('juliandate', julian.to_jd(self.date_time))
+        f.attrs.create('savefile', self.savefile)
         # ReferenceFrame class
         f.create_group('reference_frames')
         for reference_frame in self.reference_frames:
@@ -75,6 +77,7 @@ class Timestep:
         # Get/set data
         self.setTime(f.attrs['time'])
         self.setDatetime(julian.from_jd(f.attrs['juliandate']))
+        self.setSaveFile(f.attrs['savefile'])
         # ReferenceFrame class
         for reference_frame in f['reference_frames']:
             group = f['reference_frames'][reference_frame]
@@ -131,6 +134,24 @@ class Timestep:
             date_time (obj): date_time to set for Timestep.
         """
         self.date_time = date_time
+    
+    def getSaveFile(self):
+        """
+        Get save file integer.
+
+        Returns:
+            savefile (int): Timestep savefile integer.
+        """
+        return self.savefile
+    
+    def setSaveFile(self, savefile):
+        """
+        Set savefile.
+
+        Args:
+            savefile (int): Timestep savefile integer.
+        """
+        self.savefile = savefile
         
     def setRelationships(self):
         """

@@ -38,7 +38,7 @@ def plotTrajectory(figure, points, color):
         points (list): List of points defining trajectory.
         color (tuple): Tuple defining path color, i.e (0, 0, 0).
     """
-    line = tvtk.LineSource(points=points)
+    line = tvtk.LineSource(points=points) # Can modify line using line.trait_set(points=data)
     line_mapper = tvtk.PolyDataMapper(input_connection=line.output_port)
     p = tvtk.Property(line_width=2, color=color)
     line_actor = tvtk.Actor(mapper=line_mapper, property=p)

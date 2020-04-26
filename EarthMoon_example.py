@@ -31,7 +31,6 @@ moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth')
 
 # Step 2: Setup and run System
 system = System('EarthMoon')
-#system.setTexture('pysamss/resources/starmap_galactic.jpg')
 system.current.addCelestialBody(earth)
 system.current.addCelestialBody(moon)
 system.current.celestial_bodies['Earth'].setPosition(earth_pos1)
@@ -61,9 +60,8 @@ earth = system.current.celestial_bodies['Earth']
 moon = system.current.celestial_bodies['Moon']
 
 # Step 3.3: Plotting
+'''
 figure = mlab.figure(size=(600, 600))
-
-#figure.scene.add_actor(system.actor)
 
 figure.scene.add_actor(earth.actor)
 plotTrajectory(figure, earthPositions, (1, 1, 1))
@@ -76,21 +74,23 @@ moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.getRadius()*1.5)
 mlab.view(focalpoint=earth.getPosition(), figure=figure)
 
 mlab.show()
-
-def updateScene(timestep_int):
-    keys = list(system.timesteps.keys())
-    keys.sort()
-    # Remove old actor(s)
-    figure.scene.remove_actor(system.timesteps[keys[timestep_int-1]].celestial_bodies['Earth'].actor)
-    # Define and add new actor(s)
-    earthactor = system.timesteps[keys[timestep_int]].celestial_bodies['Earth'].actor
-    figure.scene.add_actor(earthactor)
-    mlab.view(focalpoint=system.timesteps[keys[timestep_int]].celestial_bodies['Earth'].getPosition(),
-              distance=system.timesteps[keys[timestep_int]].celestial_bodies['Earth'].getRadius()*5,
-              figure=figure)
-
+'''
 figure = mlab.figure(size=(600, 600))
-figure.scene.add_actor(system.timesteps[0.0].celestial_bodies['Earth'].actor)
-for i in range(1,394):
-    updateScene(i)
-    input('Press any key...')
+scene_actors = {}
+for celestial_body in system.current.celestial_bodies.values():
+    scene_actors[celestial_body.name] = celestial_body.getActor()
+    figure.scene.add_actor(scene_actors[celestial_body.name])
+
+def updateScene(savefile):
+    for celestial_body in system.current.celestial_bodies.values():
+        # Get new position and orientation properties
+        position = system.timesteps[savefile].celestial_bodies[celestial_body.name].getPosition()
+        orientation = np.rad2deg(quaternion2euler(system.timesteps[savefile].celestial_bodies[celestial_body.name].getAttitude()))
+        # Set properties to figure actors
+        scene_actors[celestial_body.name].trait_set(position=position, orientation=orientation)
+    # Update figure
+    figure.render()
+mlab.show()
+i = 0
+updateScene(i)
+i += 1
