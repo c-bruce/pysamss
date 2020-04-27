@@ -13,7 +13,8 @@ import sys
 
 import numpy as np
 
-#from ..helpermath.helpermath import *
+from ..helpermath.helpermath import *
+'''
 def quaternion2euler(quaternion):
     """
     Get Euler angles representation of quaternion [w, x, y, z].
@@ -33,7 +34,7 @@ def quaternion2euler(quaternion):
     psi = np.arctan2(2 * ((w * z) + (x * y)), 1 - 2 * (y**2 + z**2))
     euler = np.array([phi, theta, psi])
     return euler
-
+'''
 class MainWindow(QMainWindow):
     """
     MainWindow class.

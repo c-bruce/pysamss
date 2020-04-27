@@ -49,6 +49,12 @@ system.simulateSystem()
 # Step 3.1: Load data
 system.load('EarthMoon.psm')
 
+# Step 3.2: Plot data
+fig = MainWidget()
+fig.loadSystem(system)
+fig.showMaximized()
+mlab.show()
+'''
 # Step 3.2: Get Earth, Moon and ISS position data
 timesteps = sorted(list(system.timesteps.keys()))
 earthPositions = np.empty([len(timesteps), 3])
@@ -58,7 +64,7 @@ for i in range(0, len(timesteps)):
     moonPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Moon'].getPosition()
 earth = system.current.celestial_bodies['Earth']
 moon = system.current.celestial_bodies['Moon']
-
+'''
 # Step 3.3: Plotting
 '''
 figure = mlab.figure(size=(600, 600))
@@ -74,6 +80,7 @@ moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.getRadius()*1.5)
 mlab.view(focalpoint=earth.getPosition(), figure=figure)
 
 mlab.show()
+'''
 '''
 figure = mlab.figure(size=(600, 600))
 scene_actors = {}
@@ -94,3 +101,4 @@ mlab.show()
 i = 0
 updateScene(i)
 i += 1
+'''

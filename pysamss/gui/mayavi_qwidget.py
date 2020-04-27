@@ -59,8 +59,6 @@ class MayaviQWidget(QtGui.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.visualization = Visualization()
-        #plotCylinder(self.visualization.scene3d, 0.5, 1.0, [0.0, 0.0, 0.0])
-        #self.visualization.scene3d.mlab.orientation_axes()
 
         # edit_traits call will generate the widget to embed
         self.ui = self.visualization.edit_traits(parent=self, kind='subpanel').control

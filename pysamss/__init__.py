@@ -11,3 +11,4 @@ from .forcetorque.gravity import gravity
 from .forcetorque.thrust import thrust
 from .control.pidcontroller import PIDcontroller
 from .plotting.plotting import plotCelestialBody, plotCylinder, plotTrajectory
+from .gui.postwindow import MainWidget
