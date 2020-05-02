@@ -16,8 +16,7 @@ class RigidBody:
         parent_name (str): Name of parent RigidBody object.
 
     Note:
-        - CelestialBody and Vessel classes derive the bulk of their methods
-          from RigidBody class.
+        - CelestialBody and Vessel classes derive the majority of their methods from RigidBody class.
     """
     def __init__(self, name=None, state=None, U=None, parent_name=None):
         self.name = name
@@ -90,6 +89,28 @@ class RigidBody:
             state (list): State vector to set.
         """
         self.state = state
+    
+    def getStateD(self, state0=None, A=None, B=None, U=None):
+        """
+        Get state derivative vector.
+        [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, qw_d, qx_d, qy_d, qz_d].
+
+        Args:
+            state0 (np.array): State vector at t=0. If state0=None the current state vector is used.
+            A (np.array): System matrix A. If A=None the current A matrix is used.
+            B (np.array): Control matrix B. If B=None the current B matrix is used.
+            U (np.array): Input vector U. If U=None the current U vector is used.
+        """
+        if state0 is None:
+            state0 = self.getState()
+        if A is None:
+            A = self.getA()
+        if B is None:
+            B = self.getB()
+        if U is None:
+            U = self.getU()
+        state_d = np.dot(A, state0) + np.dot(B, U)
+        return state_d
 
     def getVelocity(self, local=None):
         """
@@ -241,10 +262,65 @@ class RigidBody:
             self.bodyRF = ReferenceFrame()
             self.bodyRF.rotate(attitude)
         self.state[9:13] = list(attitude)
+    
+    def getA(self, state0=None):
+        """
+        Get system matrix A. A relates how the current state affects the state change.
+
+        Args:
+            state0 (np.array): State vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz].
+                               If state=None current rigid body state is used.
+        
+        Returns:
+            A (np.array): System matrix A.
+        """
+        if state0 is None:
+            state0 = self.getState()
+        A = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # . [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.5 * state0[6], -0.5 * state0[7], -0.5 * state0[8]],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5 * state0[6], 0, 0.5 * state0[8], -0.5 * state0[7]],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5 * state0[7], -0.5 * state0[8], 0, 0.5 * state0[6]],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5 * state0[8], 0.5 * state0[7], -0.5 * state0[6], 0]])
+        return A
+
+    def getB(self, m=None, Ii=None):
+        """
+        Get control matrix B. B determines how the system input affects the state change.
+
+        Args:
+            m (float): Mass [kg]. If mass=None current rigid body mass is used.
+            Ii (np.array): Inverse inertia matrix. If Ii=None current rigid body inverse inertia matrix is used.
+        """
+        if m is None:
+            m = self.getMass()
+        if Ii is None:
+            Ii = self.getIi()
+        B = np.array([[1/m, 0, 0, 0, 0, 0], # . [Fx, Fy, Fz, Mx, My, Mz]
+                      [0, 1/m, 0, 0, 0, 0],
+                      [0, 0, 1/m, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, Ii[0,0], Ii[0,1], Ii[0,2]],
+                      [0, 0, 0, Ii[1,0], Ii[1,1], Ii[1,2]],
+                      [0, 0, 0, Ii[2,0], Ii[2,1], Ii[2,2]],
+                      [0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0]])
+        return B
 
     def getU(self):
         """
-        Get current U vector.
+        Get input vector U.
         [Fx, Fy, Fz, Mx, My, Mz]
 
         Returns:
@@ -254,7 +330,7 @@ class RigidBody:
 
     def setU(self, U):
         """
-        Set current U vector.
+        Set input vector U.
         [Fx, Fy, Fz, Mx, My, Mz]
 
         Args:
@@ -418,3 +494,95 @@ class RigidBody:
             I (np.array): CelestialBody inertia matrix.
         """
         self.I = I
+    
+    def getIi(self):
+        """
+        Get inverse inertia matrix Ii.
+
+        Returns:
+            Ii (np.array): CelestialBody inverse inertia matrix.
+        """
+        I = self.getI()
+        Ii = np.linalg.inv(I)
+        return Ii
+    
+    ### Integration schemes ###
+
+    def euler(self, dt, state0=None, state_d=None):
+        """
+        Perform Euler integration.
+        See https://en.wikipedia.org/wiki/Euler_method.
+
+        Args:
+            state0 (np.array): Initial state vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]. If state0=None the
+                               current state vector is used.
+            state_d (np.array): State derivative vector [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, phi_d, theta_d, psi_d].
+                                If state_d=None the current state derivative vector is used.
+            dt (float): Timestep (s).
+
+        Returns:
+            state1 (np.array): Updated state vector after time dt [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        """
+        # Setup state0 and state_d
+        if state0 is None:
+            state0 = self.getState()
+        if state_d is None:
+            state_d = self.getStateD()
+        # Calculate state1
+        state1 = state0 + state_d * dt
+        return state1
+    
+    def rk4(self, dt, state0=None, state_d=None):
+        """
+        Perform Runge-Kutta integration.
+        https://en.wikipedia.org/wiki/Runge-Kutta_methods
+
+        Args:
+            state0 (np.array): Initial state vector [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi]. If state0=None the
+                               current state vector is used.
+            state_d (np.array): State derivative vector [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, phi_d, theta_d, psi_d].
+                                If state_d=None the current state derivative vector is used.
+            dt (float): Timestep (s).
+
+        Returns:
+            state1 (np.array): Updated state vector after time dt [u, v, w, x, y, z, phi_d, theta_d, psi_d, phi, theta, psi].
+        """
+        # Setup state0 and state_d
+        if state0 is None:
+            state0 = self.getState()
+        if state_d is None:
+            state_d = self.getStateD()
+        # k1
+        k1 = state_d
+        # k2
+        state_k2 = state0 + (0.5 * dt * k1)
+        A = self.getA(state0=state_k2)
+        k2 = self.getStateD(state0=state_k2, A=A)
+        # k3
+        state_k3 = state0 + (0.5 * dt * k2)
+        A = self.getA(state0=state_k3)
+        k3 = self.getStateD(state0=state_k3, A=A)
+        # k4
+        state_k4 = state0 + (dt * k3)
+        A = self.getA(state0=state_k4)
+        k4 = self.getStateD(state0=state_k4, A=A)
+        # Calculate state1
+        state1 = state0 + ((1 / 6) * (k1 + (2 * k2) + (2 * k3) + k4)) * dt
+        return state1
+
+    ### Simulate method ###
+
+    def simulate(self, dt, scheme):
+        """
+        Simulate using a given integration scheme.
+
+        Args:
+            scheme (function): Integration scheme i.e. euler.
+            dt (float): Time step.
+        """
+        # Get new state
+        state1 = scheme(dt)
+        # Update state and U vectors.
+        self.setState(state1)
+        self.setU(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.bodyRF.rotateAbs(Quaternion(state1[9:]))

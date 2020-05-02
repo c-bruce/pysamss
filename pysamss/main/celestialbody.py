@@ -28,7 +28,7 @@ class CelestialBody(RigidBody):
         self.radius = radius
         self.I = self.calculateI()
         if texture is not None:
-            self.texture = self.setTexture(texture)
+            self.setTexture(texture)
         else:
             self.texture = None
     

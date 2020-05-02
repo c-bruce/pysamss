@@ -398,3 +398,22 @@ class Vessel(RigidBody):
         """
         Get roll, pitch, yaw
         """
+    
+    ### Simulate method ###
+
+    def simulate(self, dt, scheme):
+        """
+        Simulate using a given integration scheme.
+
+        Args:
+            scheme (function): Integration scheme i.e. euler.
+            dt (float): Time step.
+        """
+        # Get new state
+        state1 = scheme(dt)
+        # Update state and U vectors.
+        self.setState(state1)
+        self.setU(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.bodyRF.rotateAbs(Quaternion(state1[9:]))
+        # Update NorthEastDownRF
+        self.updateNorthEastDownRF()

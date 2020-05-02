@@ -264,11 +264,19 @@ class System:
                 self.save()
             # Step 3: Simulate timestep
             # Celestial Bodies:
+            for celestial_body in self.current.celestial_bodies.values():
+                celestial_body.simulate(self.dt, celestial_body.euler)
+            # Vessels:
+            for vessel in self.current.vessels.values():
+                vessel.simulate(self.dt, vessel.euler)
+            '''
+            # Celestial Bodies:
             for celestial_body in self.current.celestial_bodies:
                 simulate(self.current.celestial_bodies[celestial_body], self.scheme, self.dt)
             # Vessels:
             for vessel in self.current.vessels:
                 simulate(self.current.vessels[vessel], self.scheme, self.dt)
+            '''
             # Step 4: Iterate on time
             self.current.setTime(self.current.time + self.dt)
             self.current.setDatetime(self.current.date_time + datetime.timedelta(0, self.dt))
