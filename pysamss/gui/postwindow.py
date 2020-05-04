@@ -126,9 +126,27 @@ class MainWidget(QSplitter):
     def loadSystem(self, system):
         self.system = system
         self.slider.setMaximum(max(list(system.timesteps.keys())))
+        timesteps = sorted(list(self.system.timesteps.keys()))
+        # CelestialBodies
         for celestial_body in self.system.current.celestial_bodies.values():
-            self.actors[celestial_body.name] = celestial_body.getActor()
-            self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name])
+            celestial_body_actor = {}
+            # Get base actor
+            celestial_body_actor['base'] = celestial_body.getActor()
+            # Get trajectory actor
+            points = np.empty([len(timesteps), 3])
+            for i in range(0, len(timesteps)):
+                points[i,:] = system.timesteps[timesteps[i]].celestial_bodies[celestial_body.name].getPosition()
+            line = tvtk.LineSource(points=points) # Can modify line using line.trait_set(points=data)
+            line_mapper = tvtk.PolyDataMapper(input_connection=line.output_port)
+            p = tvtk.Property(line_width=2, color=(1, 1, 1))
+            line_actor = tvtk.Actor(mapper=line_mapper, property=p)
+            celestial_body_actor['points'] = points
+            celestial_body_actor['line'] = line
+            celestial_body_actor['trajectory'] = line_actor
+            # Add actors to the scene
+            self.actors[celestial_body.name] = celestial_body_actor
+            self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['base'])
+            self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['trajectory'])
 
     def sliderValueChange(self):
         value = self.slider.value()
@@ -138,7 +156,8 @@ class MainWidget(QSplitter):
                 position = self.system.timesteps[value].celestial_bodies[celestial_body.name].getPosition()
                 orientation = np.rad2deg(quaternion2euler(self.system.timesteps[value].celestial_bodies[celestial_body.name].getAttitude()))
                 # Set properties to figure actors
-                self.actors[celestial_body.name].trait_set(position=position, orientation=orientation)
+                self.actors[celestial_body.name]['base'].trait_set(position=position, orientation=orientation)
+                self.actors[celestial_body.name]['line'].trait_set(points=self.actors[celestial_body.name]['points'][:value + 1])
         print(value)
         self.viewer.visualization.scene3d.render()
 

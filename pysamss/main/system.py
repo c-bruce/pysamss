@@ -17,8 +17,6 @@ from .celestialbody import CelestialBody
 from .vessel import Vessel
 from .stage import Stage
 from ..helpermath.helpermath import *
-from ..simulate.simulate import simulate
-from ..simulate.integrationschemes import euler
 from ..forcetorque.gravity import gravity
 from ..forcetorque.thrust import thrust
 
@@ -37,7 +35,7 @@ class System:
         self.dt = 0.1
         self.endtime = 100.0
         self.saveinterval = 1
-        self.scheme = euler
+        self.scheme = 'euler'
 
     def save(self):
         """
@@ -269,14 +267,6 @@ class System:
             # Vessels:
             for vessel in self.current.vessels.values():
                 vessel.simulate(self.dt, vessel.euler)
-            '''
-            # Celestial Bodies:
-            for celestial_body in self.current.celestial_bodies:
-                simulate(self.current.celestial_bodies[celestial_body], self.scheme, self.dt)
-            # Vessels:
-            for vessel in self.current.vessels:
-                simulate(self.current.vessels[vessel], self.scheme, self.dt)
-            '''
             # Step 4: Iterate on time
             self.current.setTime(self.current.time + self.dt)
             self.current.setDatetime(self.current.date_time + datetime.timedelta(0, self.dt))
