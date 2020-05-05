@@ -132,32 +132,55 @@ class MainWidget(QSplitter):
             celestial_body_actor = {}
             # Get base actor
             celestial_body_actor['base'] = celestial_body.getActor()
+            # Get bodyRF actors
+            radius = celestial_body.getRadius()
+            position = celestial_body.getPosition()
+            i, j, k = celestial_body.bodyRF.getIJK()
+            i_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (i * radius * 1.5), axis=0), axis=0)
+            j_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (j * radius * 1.5), axis=0), axis=0)
+            k_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (k * radius * 1.5), axis=0), axis=0)
+            i_source, j_source, k_source, i_actor, j_actor, k_actor = celestial_body.bodyRF.getActors()
+            i_source.trait_set(points=i_points)
+            j_source.trait_set(points=j_points)
+            k_source.trait_set(points=k_points)
+            celestial_body_actor['bodyRF'] = [i_points, j_points, k_points, i_source, j_source, k_source, i_actor, j_actor, k_actor]
             # Get trajectory actor
             points = np.empty([len(timesteps), 3])
             for i in range(0, len(timesteps)):
                 points[i,:] = system.timesteps[timesteps[i]].celestial_bodies[celestial_body.name].getPosition()
-            line = tvtk.LineSource(points=points) # Can modify line using line.trait_set(points=data)
-            line_mapper = tvtk.PolyDataMapper(input_connection=line.output_port)
+            line_source = tvtk.LineSource(points=points) # Can modify line_source using line_source.trait_set(points=data)
+            line_mapper = tvtk.PolyDataMapper(input_connection=line_source.output_port)
             p = tvtk.Property(line_width=2, color=(1, 1, 1))
             line_actor = tvtk.Actor(mapper=line_mapper, property=p)
-            celestial_body_actor['points'] = points
-            celestial_body_actor['line'] = line
-            celestial_body_actor['trajectory'] = line_actor
+            celestial_body_actor['trajectory'] = [points, line_source, line_actor]
             # Add actors to the scene
             self.actors[celestial_body.name] = celestial_body_actor
             self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['base'])
-            self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['trajectory'])
+            self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['bodyRF'][6])
+            self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['bodyRF'][7])
+            self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['bodyRF'][8])
+            self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['trajectory'][2])
 
     def sliderValueChange(self):
         value = self.slider.value()
         if self.system is not None:
             for celestial_body in self.system.current.celestial_bodies.values():
-                # Get new position and orientation properties
+                # Update base actor
                 position = self.system.timesteps[value].celestial_bodies[celestial_body.name].getPosition()
                 orientation = np.rad2deg(quaternion2euler(self.system.timesteps[value].celestial_bodies[celestial_body.name].getAttitude()))
-                # Set properties to figure actors
-                self.actors[celestial_body.name]['base'].trait_set(position=position, orientation=orientation)
-                self.actors[celestial_body.name]['line'].trait_set(points=self.actors[celestial_body.name]['points'][:value + 1])
+                self.actors[celestial_body.name]['base'].trait_set(position=position, orientation=(orientation + np.array([0, 0, 180])))
+                # Update bodyRF actors
+                radius = self.system.timesteps[value].celestial_bodies[celestial_body.name].getRadius()
+                position = self.system.timesteps[value].celestial_bodies[celestial_body.name].getPosition()
+                i, j, k = self.system.timesteps[value].celestial_bodies[celestial_body.name].bodyRF.getIJK()
+                i_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (i * radius * 1.5), axis=0), axis=0)
+                j_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (j * radius * 1.5), axis=0), axis=0)
+                k_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (k * radius * 1.5), axis=0), axis=0)
+                self.actors[celestial_body.name]['bodyRF'][3].trait_set(points=i_points)
+                self.actors[celestial_body.name]['bodyRF'][4].trait_set(points=j_points)
+                self.actors[celestial_body.name]['bodyRF'][5].trait_set(points=k_points)
+                # Update trajectory actor
+                self.actors[celestial_body.name]['trajectory'][1].trait_set(points=self.actors[celestial_body.name]['trajectory'][0][:value + 1])
         self.viewer.visualization.scene3d.render()
 
 # Main loop

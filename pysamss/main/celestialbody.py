@@ -134,6 +134,9 @@ class CelestialBody(RigidBody):
         """
         Get CelestialBody tvtk actor.
 
+        Returns:
+            sphere_actor (tvtk.actor): CelestialBody tvtk actor.
+
         Note:
             -   Defaults to a white sphere if self.texture is None.
         """
@@ -148,6 +151,6 @@ class CelestialBody(RigidBody):
         else:
             sphere = tvtk.TexturedSphereSource(radius=self.radius, theta_resolution=Nrad, phi_resolution=Nrad) # Pipeline - source
             sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port) # Pipeline - mapper
-            sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=self.texture, orientation=attitude) # Pipeline - actor
+            sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=self.texture, orientation=(attitude + np.array([0, 0, 180]))) # Pipeline - actor
         sphere_actor.add_position(position) # Pipeline - actor.add_position
         return sphere_actor

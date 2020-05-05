@@ -3,6 +3,7 @@
 # ReferenceFrame Class
 import numpy as np
 from mayavi import mlab
+from tvtk.api import tvtk
 
 class ReferenceFrame:
     """
@@ -110,3 +111,32 @@ class ReferenceFrame:
         mlab.quiver3d(origin[0], origin[1], origin[2], self.i[0], self.i[1], self.i[2], scale_factor=scale_factor, color=(1, 0, 0), figure=figure)
         mlab.quiver3d(origin[0], origin[1], origin[2], self.j[0], self.j[1], self.j[2], scale_factor=scale_factor, color=(0, 1, 0), figure=figure)
         mlab.quiver3d(origin[0], origin[1], origin[2], self.k[0], self.k[1], self.k[2], scale_factor=scale_factor, color=(0, 0, 1), figure=figure)
+    
+    def getActors(self):
+        """
+        Get ReferenceFrame tvtk actors.
+
+        Returns:
+            i_source (tvtk.LineSource): i tvtk LineSource.
+            j_source (tvtk.LineSource): j tvtk LineSource.
+            k_source (tvtk.LineSource): k tvtk LineSource.
+            i_actor (tvtk.actor): i tvtk actor.
+            j_actor (tvtk.actor): j tvtk actor.
+            k_actor (tvtk.actor): k tvtk actor.
+        """
+        # i
+        i_source = tvtk.LineSource(points=[[0, 0, 0], self.i.tolist()])
+        i_mapper = tvtk.PolyDataMapper(input_connection=i_source.output_port)
+        i_p = tvtk.Property(line_width=2, color=(1, 0, 0))
+        i_actor = tvtk.Actor(mapper=i_mapper, property=i_p)
+        # j
+        j_source = tvtk.LineSource(points=[[0, 0, 0], self.j.tolist()])
+        j_mapper = tvtk.PolyDataMapper(input_connection=j_source.output_port)
+        j_p = tvtk.Property(line_width=2, color=(0, 1, 0))
+        j_actor = tvtk.Actor(mapper=j_mapper, property=j_p)
+        # k
+        k_source = tvtk.LineSource(points=[[0, 0, 0], self.k.tolist()])
+        k_mapper = tvtk.PolyDataMapper(input_connection=k_source.output_port)
+        k_p = tvtk.Property(line_width=2, color=(0, 0, 1))
+        k_actor = tvtk.Actor(mapper=k_mapper, property=k_p)
+        return i_source, j_source, k_source, i_actor, j_actor, k_actor

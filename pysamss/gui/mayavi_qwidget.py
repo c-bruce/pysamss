@@ -59,7 +59,6 @@ class MayaviQWidget(QtGui.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.visualization = Visualization()
-
         # edit_traits call will generate the widget to embed
         self.ui = self.visualization.edit_traits(parent=self, kind='subpanel').control
         layout.addWidget(self.ui)
