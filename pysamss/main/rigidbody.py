@@ -31,6 +31,7 @@ class RigidBody:
         self.universalRF = None
         self.parentRF = None
         self.bodyRF = None
+        self.bodyFixedRF = None
         self.parent_name = parent_name
         self.parent = None
     
@@ -443,6 +444,24 @@ class RigidBody:
             bodyRF (obj): Body ReferenceFrame object.
         """
         self.bodyRF = bodyRF
+
+    def getBodyFixedRF(self):
+        """
+        Get RigidBody body reference frame.
+
+        Returns:
+            bodyFixedRF (obj): Body fixed ReferenceFrame object.
+        """
+        return self.bodyFixedRF
+    
+    def setBodyFixedRF(self, bodyFixedRF):
+        """
+        Set RigidBody body reference frame.
+
+        Args:
+            bodyFixedRF (obj): Body fixed ReferenceFrame object.
+        """
+        self.bodyFixedRF = bodyFixedRF
 
     def getParentChain(self):
         """

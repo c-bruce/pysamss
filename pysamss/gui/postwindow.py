@@ -158,7 +158,6 @@ class MainWidget(QSplitter):
                 # Set properties to figure actors
                 self.actors[celestial_body.name]['base'].trait_set(position=position, orientation=orientation)
                 self.actors[celestial_body.name]['line'].trait_set(points=self.actors[celestial_body.name]['points'][:value + 1])
-        print(value)
         self.viewer.visualization.scene3d.render()
 
 # Main loop

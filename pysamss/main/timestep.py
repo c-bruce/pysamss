@@ -164,6 +164,7 @@ class Timestep:
                 self.celestial_bodies[celestial_body].setParentRF(self.reference_frames[self.celestial_bodies[celestial_body].parent_name + 'RF'])
             self.celestial_bodies[celestial_body].setUniversalRF(self.universalRF)
             self.celestial_bodies[celestial_body].setBodyRF(self.reference_frames[self.celestial_bodies[celestial_body].name + 'RF'])
+            self.celestial_bodies[celestial_body].setBodyFixedRF(self.reference_frames[self.celestial_bodies[celestial_body].name + 'FixedRF'])
         for vessel in self.vessels:
             if self.vessels[vessel].parent_name is not None:
                 self.vessels[vessel].setParent(self.celestial_bodies[self.vessels[vessel].parent_name])
@@ -191,9 +192,12 @@ class Timestep:
             celestial_body.setParent(None)
             celestial_body.setUniversalRF(self.universalRF)
             celestial_body.setParentRF(self.universalRF)
-            celestial_body.setBodyRF(copy.copy(self.universalRF))
+            celestial_body.setBodyRF(copy.copy(self.universalRF)) # Should be correctly oriented depending on datetime
             celestial_body.bodyRF.setName(celestial_body.name + 'RF')
             self.addReferenceFrame(celestial_body.bodyRF)
+            celestial_body.setBodyFixedRF(copy.copy(self.universalRF)) # Should be correctly oriented depending on datetime
+            celestial_body.bodyFixedRF.setName(celestial_body.name + 'FixedRF')
+            self.addReferenceFrame(celestial_body.bodyFixedRF)
             self.celestial_bodies[celestial_body.name] = celestial_body
         else: # Else the body's parentRF is the parents bodyRF
             if celestial_body.parent_name in self.celestial_bodies:
@@ -201,8 +205,11 @@ class Timestep:
                 celestial_body.setUniversalRF(self.universalRF)
                 celestial_body.setParentRF(celestial_body.parent.bodyRF)
                 celestial_body.setBodyRF(copy.copy(celestial_body.parent.bodyRF))
-                celestial_body.bodyRF.setName(celestial_body.name + 'RF')
+                celestial_body.bodyRF.setName(celestial_body.name + 'RF') # Should be correctly oriented depending on datetime
                 self.addReferenceFrame(celestial_body.bodyRF)
+                celestial_body.setBodyFixedRF(copy.copy(celestial_body.parent.bodyRF)) # Should be correctly oriented depending on datetime
+                celestial_body.bodyFixedRF.setName(celestial_body.name + 'FixedRF')
+                self.addReferenceFrame(celestial_body.bodyFixedRF)
                 self.celestial_bodies[celestial_body.name] = celestial_body
             else:
                 print('Error: Parent "' + celestial_body.parent_name + '" does not exist. Unable to add "' + celestial_body.name + '" to System.')
