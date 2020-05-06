@@ -41,9 +41,11 @@ system.current.addVessel(iss)
 system.current.celestial_bodies['Earth'].setPosition(earth_pos1)
 system.current.celestial_bodies['Earth'].setVelocity(earth_vel)
 system.current.celestial_bodies['Earth'].setTexture('pysamss/resources/earth.jpg')
+system.current.celestial_bodies['Earth'].setAttitudeDot(np.array([0.0, 0.0, np.deg2rad(360 / ((23 * 60 * 60) + (56 * 60) + 4))]))
 system.current.celestial_bodies['Moon'].setPosition(moon_pos1)
 system.current.celestial_bodies['Moon'].setVelocity(moon_vel)
 system.current.celestial_bodies['Moon'].setTexture('pysamss/resources/moon.jpg')
+system.current.celestial_bodies['Moon'].setAttitudeDot(np.array([0.0, 0.0, np.deg2rad(360 / 2358720.0)]))
 system.current.vessels['ISS'].setPosition([earth.radius + 404000, 0, 0], local=True)
 system.current.vessels['ISS'].setVelocity([0, 7660, 0], local=True)
 system.setDt(0.1)
@@ -55,6 +57,11 @@ system.simulateSystem()
 # Step 3.1: Load data
 system.load('EarthMoonISS.psm')
 
+# Step 3.2: Plot data
+fig = MainWidget()
+fig.loadSystem(system)
+fig.showMaximized()
+'''
 # Step 3.2: Get Earth, Moon and ISS position data
 timesteps = sorted(list(system.timesteps.keys()))
 earthPositions = np.empty([len(timesteps), 3])
@@ -86,3 +93,4 @@ northeastdownRF.plot(figure, iss.getPosition(), scale_factor=100000)
 mlab.view(focalpoint=iss.getPosition(), figure=figure)
 
 mlab.show()
+'''

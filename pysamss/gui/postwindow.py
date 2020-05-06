@@ -14,27 +14,7 @@ import sys
 import numpy as np
 
 from ..helpermath.helpermath import *
-'''
-def quaternion2euler(quaternion):
-    """
-    Get Euler angles representation of quaternion [w, x, y, z].
 
-    Args:
-        quaternion (list/np.array): Quaternion to convert.
-
-    Returns:
-        euler (np.array): Euler angles representation of quaternion.
-    """
-    w = quaternion[0]
-    x = quaternion[1]
-    y = quaternion[2]
-    z = quaternion[3]
-    phi = np.arctan2(2 * ((w * x) + (y * z)), 1 - 2 * (x**2 + y**2))
-    theta = np.arcsin(2 * ((w * y) - (z * x)))
-    psi = np.arctan2(2 * ((w * z) + (x * y)), 1 - 2 * (y**2 + z**2))
-    euler = np.array([phi, theta, psi])
-    return euler
-'''
 class MainWindow(QMainWindow):
     """
     MainWindow class.
@@ -160,10 +140,40 @@ class MainWidget(QSplitter):
             self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['bodyRF'][7])
             self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['bodyRF'][8])
             self.viewer.visualization.scene3d.add_actor(self.actors[celestial_body.name]['trajectory'][2])
+        # Vessels
+        for vessel in self.system.current.vessels.values():
+            vessel_actor = {}
+            # Get bodyRF actors
+            position = vessel.getPosition()
+            i, j, k = vessel.bodyRF.getIJK()
+            i_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (i * 100000), axis=0), axis=0)
+            j_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (j * 100000), axis=0), axis=0)
+            k_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (k * 100000), axis=0), axis=0)
+            i_source, j_source, k_source, i_actor, j_actor, k_actor = vessel.bodyRF.getActors()
+            i_source.trait_set(points=i_points)
+            j_source.trait_set(points=j_points)
+            k_source.trait_set(points=k_points)
+            vessel_actor['bodyRF'] = [i_points, j_points, k_points, i_source, j_source, k_source, i_actor, j_actor, k_actor]
+            # Get trajectory actor
+            points = np.empty([len(timesteps), 3])
+            for i in range(0, len(timesteps)):
+                points[i,:] = system.timesteps[timesteps[i]].vessels[vessel.name].getPosition()
+            line_source = tvtk.LineSource(points=points) # Can modify line_source using line_source.trait_set(points=data)
+            line_mapper = tvtk.PolyDataMapper(input_connection=line_source.output_port)
+            p = tvtk.Property(line_width=2, color=(1, 1, 1))
+            line_actor = tvtk.Actor(mapper=line_mapper, property=p)
+            vessel_actor['trajectory'] = [points, line_source, line_actor]
+            # Add actors to the scene
+            self.actors[vessel.name] = vessel_actor
+            self.viewer.visualization.scene3d.add_actor(self.actors[vessel.name]['bodyRF'][6])
+            self.viewer.visualization.scene3d.add_actor(self.actors[vessel.name]['bodyRF'][7])
+            self.viewer.visualization.scene3d.add_actor(self.actors[vessel.name]['bodyRF'][8])
+            self.viewer.visualization.scene3d.add_actor(self.actors[vessel.name]['trajectory'][2])
 
     def sliderValueChange(self):
         value = self.slider.value()
         if self.system is not None:
+            # CelestialBodies
             for celestial_body in self.system.current.celestial_bodies.values():
                 # Update base actor
                 position = self.system.timesteps[value].celestial_bodies[celestial_body.name].getPosition()
@@ -181,6 +191,19 @@ class MainWidget(QSplitter):
                 self.actors[celestial_body.name]['bodyRF'][5].trait_set(points=k_points)
                 # Update trajectory actor
                 self.actors[celestial_body.name]['trajectory'][1].trait_set(points=self.actors[celestial_body.name]['trajectory'][0][:value + 1])
+            # Vessels
+            for vessel in self.system.current.vessels.values():
+                # Update bodyRF actors
+                position = self.system.timesteps[value].vessels[vessel.name].getPosition()
+                i, j, k = self.system.timesteps[value].vessels[vessel.name].bodyRF.getIJK()
+                i_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (i * 100000), axis=0), axis=0)
+                j_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (j * 100000), axis=0), axis=0)
+                k_points = np.append(np.expand_dims(position, axis=0), np.expand_dims(position + (k * 100000), axis=0), axis=0)
+                self.actors[vessel.name]['bodyRF'][3].trait_set(points=i_points)
+                self.actors[vessel.name]['bodyRF'][4].trait_set(points=j_points)
+                self.actors[vessel.name]['bodyRF'][5].trait_set(points=k_points)
+                # Update trajectory actor
+                self.actors[vessel.name]['trajectory'][1].trait_set(points=self.actors[vessel.name]['trajectory'][0][:value + 1])
         self.viewer.visualization.scene3d.render()
 
 # Main loop
