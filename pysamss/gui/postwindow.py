@@ -107,6 +107,13 @@ class MainWidget(QSplitter):
         self.system = system
         self.slider.setMaximum(max(list(system.timesteps.keys())))
         timesteps = sorted(list(self.system.timesteps.keys()))
+        # DateTime actor
+        text = 'DateTime : ' + str(system.current.getDatetime()) + ', JulianDate : ' + str(system.current.getJulianDate())
+        text_source = tvtk.TextSource(text=text)
+        text_mapper = tvtk.PolyDataMapper2D(input_connection=text_source.output_port)
+        text_actor = tvtk.Actor2D(mapper=text_mapper)
+        self.actors['DateTime'] = [text_source, text_mapper, text_actor]
+        self.viewer.visualization.scene3d.add_actor(self.actors['DateTime'][2])
         # CelestialBodies
         for celestial_body in self.system.current.celestial_bodies.values():
             celestial_body_actor = {}
@@ -173,6 +180,9 @@ class MainWidget(QSplitter):
     def sliderValueChange(self):
         value = self.slider.value()
         if self.system is not None:
+            # DateTime
+            text = 'DateTime : ' + str(self.system.timesteps[value].getDatetime()) + ', JulianDate : ' + str(self.system.timesteps[value].getJulianDate())
+            self.actors['DateTime'][0].trait_set(text=text)
             # CelestialBodies
             for celestial_body in self.system.current.celestial_bodies.values():
                 # Update base actor

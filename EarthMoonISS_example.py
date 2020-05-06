@@ -7,91 +7,55 @@ from pysamss import *
 import datetime
 import julian
 from jplephem.spk import SPK
+import urllib3
 
-# Step 1: Setup Celestial Bodies and Vessels
-# Get Earth and Moon positions and velocity from jplephem
-kernel = SPK.open('pysamss/resources/de430.bsp')
-
-time = datetime.datetime.now()
-time1 = julian.to_jd(time)
-time2 = time1 + 1 / (24 * 60 * 60)
-earth_pos1 = kernel[3,399].compute(time1) * 1000
-earth_pos2 = kernel[3,399].compute(time2) * 1000
-earth_vel = (earth_pos2 - earth_pos1) / 1
-
-moon_pos1 = kernel[3,301].compute(time1) * 1000
-moon_pos2 = kernel[3,301].compute(time2) * 1000
-moon_vel = (moon_pos2 - moon_pos1) / 1
-
-# Define Earth
-earth = CelestialBody('Earth', 5.972e24, 6.371e6)
-
-# Define Moon
-moon = CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth')
-
-# Define ISS
-stage1 = Stage(419725, 1, 10, np.array([0, 0, 0]))
-iss = Vessel('ISS', [stage1], parent_name='Earth')
-
-# Step 2: Setup and run System
+# Step 1: Setup system
 system = System('EarthMoonISS')
-system.current.addCelestialBody(earth)
-system.current.addCelestialBody(moon)
-system.current.addVessel(iss)
-system.current.celestial_bodies['Earth'].setPosition(earth_pos1)
+# Step 1.1: Add Earth, Moon and ISS to system
+system.current.addCelestialBody(CelestialBody('Earth', 5.972e24, 6.371e6))
+system.current.addCelestialBody(CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth'))
+system.current.addVessel(Vessel('ISS', [Stage(419725, 1, 10, np.array([0, 0, 0]))], parent_name='Earth'))
+
+# Step 2: Calculate positions and velocities
+time = system.current.getJulianDate()
+kernel = SPK.open('pysamss/resources/de430.bsp')
+earth_pos, earth_vel = kernel[3,399].compute_and_differentiate(time)
+# Earth
+earth_pos *= 1000 # Convert from km -> m
+earth_vel /= 86.4 # Convert from km/day -> m/s
+# Moon
+moon_pos, moon_vel = kernel[3,301].compute_and_differentiate(time)
+moon_pos *= 1000 # Convert from km -> m
+moon_vel /= 86.4 # Convert from km/day -> m/s
+# ISS
+http = urllib3.PoolManager()
+tle = http.request('GET', 'https://www.celestrak.com/NORAD/elements/stations.txt')
+tle = tle.data.decode('utf-8').strip().split('\r\n') # Gets full TLE's for constelation into a list
+iss_tle = tle[0:3]
+a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(iss_tle[1], iss_tle[2], system.current.celestial_bodies['Earth'])
+iss_pos, iss_vel = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, time, system.current.celestial_bodies['Earth'])
+
+# Step 3: Set positions and velocities
+system.current.celestial_bodies['Earth'].setPosition(earth_pos)
 system.current.celestial_bodies['Earth'].setVelocity(earth_vel)
-system.current.celestial_bodies['Earth'].setTexture('pysamss/resources/earth.jpg')
 system.current.celestial_bodies['Earth'].setAttitudeDot(np.array([0.0, 0.0, np.deg2rad(360 / ((23 * 60 * 60) + (56 * 60) + 4))]))
-system.current.celestial_bodies['Moon'].setPosition(moon_pos1)
+system.current.celestial_bodies['Earth'].setTexture('pysamss/resources/earth.jpg')
+system.current.celestial_bodies['Moon'].setPosition(moon_pos)
 system.current.celestial_bodies['Moon'].setVelocity(moon_vel)
-system.current.celestial_bodies['Moon'].setTexture('pysamss/resources/moon.jpg')
 system.current.celestial_bodies['Moon'].setAttitudeDot(np.array([0.0, 0.0, np.deg2rad(360 / 2358720.0)]))
-system.current.vessels['ISS'].setPosition([earth.radius + 404000, 0, 0], local=True)
-system.current.vessels['ISS'].setVelocity([0, 7660, 0], local=True)
+system.current.celestial_bodies['Moon'].setTexture('pysamss/resources/moon.jpg')
+system.current.vessels['ISS'].setPosition(iss_pos, local=True)
+system.current.vessels['ISS'].setVelocity(iss_vel, local=True)
+
+# Step 4: Simulate system
 system.setDt(0.1)
 system.setEndTime(5561.0)
 system.setSaveInterval(10)
 system.simulateSystem()
 
-# Step 3: Post Processing
-# Step 3.1: Load data
+# Step 5: Post processing
 system.load('EarthMoonISS.psm')
-
-# Step 3.2: Plot data
 fig = MainWidget()
 fig.loadSystem(system)
 fig.showMaximized()
 mlab.show()
-'''
-# Step 3.2: Get Earth, Moon and ISS position data
-timesteps = sorted(list(system.timesteps.keys()))
-earthPositions = np.empty([len(timesteps), 3])
-moonPositions = np.empty([len(timesteps), 3])
-issPositions = np.empty([len(timesteps), 3])
-for i in range(0, len(timesteps)):
-    earthPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Earth'].getPosition()
-    moonPositions[i,:] = system.timesteps[timesteps[i]].celestial_bodies['Moon'].getPosition()
-    issPositions[i,:] = system.timesteps[timesteps[i]].vessels['ISS'].getPosition()
-earth = system.current.celestial_bodies['Earth']
-moon = system.current.celestial_bodies['Moon']
-iss = system.current.vessels['ISS']
-
-# Step 3.3: Plotting
-figure = mlab.figure(size=(600, 600))
-
-figure.scene.add_actor(earth.actor)
-plotTrajectory(figure, earthPositions, (1, 1, 1))
-earth.bodyRF.plot(figure, earth.getPosition(), scale_factor=earth.getRadius()*1.5)
-
-figure.scene.add_actor(moon.actor)
-plotTrajectory(figure, moonPositions, (1, 1, 1))
-moon.bodyRF.plot(figure, moon.getPosition(), scale_factor=moon.getRadius()*1.5)
-
-plotTrajectory(figure, issPositions, (1, 1, 1))
-northeastdownRF = iss.getNorthEastDownRF()
-northeastdownRF.plot(figure, iss.getPosition(), scale_factor=100000)
-
-mlab.view(focalpoint=iss.getPosition(), figure=figure)
-
-mlab.show()
-'''

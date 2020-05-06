@@ -54,7 +54,7 @@ def orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, obj0):
 
     Returns:
         position (np.array): Position vector x, y, z [m].
-        velocity (np.array): Velocity vector u, v, w [m].
+        velocity (np.array): Velocity vector u, v, w [m/s].
     """
     # See https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
     # Step 1: Calculate standard gravitational parameter, mu
@@ -64,7 +64,8 @@ def orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, obj0):
     if t != t0:
         delta_t = 86400 * (t - t0)
         M_t = M0 + delta_t * np.sqrt(mu / a**3) # Mean anomaly
-        M_t = np.arctan(np.sin(M_t - np.pi), np.cos(M_t - np.pi)) + np.pi # Map M_t to values between 0 -> 2 * pi
+        #M_t = np.arctan(np.sin(M_t - np.pi), np.cos(M_t - np.pi)) + np.pi # Map M_t to values between 0 -> 2 * pi
+        M_t %= (2 * np.pi) # Map M_t to values between 0 -> 2 * pi
     else:
         M_t = M0
     # Step 3: Solve Keplers Equation M(t) = E(t) - e * sin(E(t))
