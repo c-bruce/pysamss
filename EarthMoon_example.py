@@ -54,7 +54,7 @@ system.load('EarthMoon.psm')
 fig = MainWidget()
 fig.loadSystem(system)
 fig.showMaximized()
-#mlab.show()
+mlab.show()
 '''
 # Step 3.2: Get Earth, Moon and ISS position data
 timesteps = sorted(list(system.timesteps.keys()))

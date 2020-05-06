@@ -352,9 +352,7 @@ class RigidBody:
         if local == True:
             R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
             force = np.dot(R, force)
-        self.U[0] += force[0]
-        self.U[1] += force[1]
-        self.U[2] += force[2]
+        self.U[0:3] += force
 
     def addTorque(self, torque, local=None):
         """
@@ -369,9 +367,7 @@ class RigidBody:
         if local == True:
             R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
             torque = np.dot(R, torque)
-        self.U[3] += torque[0]
-        self.U[4] += torque[1]
-        self.U[5] += torque[2]
+        self.U[3:6] += torque
     
     def getParent(self):
         """

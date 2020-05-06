@@ -45,7 +45,7 @@ class Timestep:
             f (hdf5 file): HDF5 file to save to.
         """
         f.attrs.create('time', self.time)
-        f.attrs.create('juliandate', julian.to_jd(self.date_time))
+        f.attrs.create('juliandate', self.getJulianDate())
         f.attrs.create('savefile', self.savefile)
         # ReferenceFrame class
         f.create_group('reference_frames')
@@ -134,6 +134,15 @@ class Timestep:
             date_time (obj): date_time to set for Timestep.
         """
         self.date_time = date_time
+    
+    def getJulianDate(self):
+        """
+        Get julian_date.
+
+        Returns:
+            julian_date (float): Julian date.
+        """
+        return julian.to_jd(self.date_time)
     
     def getSaveFile(self):
         """

@@ -12,6 +12,7 @@ system = System('Galileo')
 # Step 2: Define Earth
 earth = CelestialBody('Earth', 5.972e24, 6.371e6)
 system.current.addCelestialBody(earth)
+system.current.celestial_bodies['Earth'].setTexture('pysamss/resources/earth.jpg')
 
 # Step 3: Get TLE data for Galileo Constelation
 http = urllib3.PoolManager()
@@ -42,6 +43,12 @@ system.simulateSystem()
 # Step 6.1: Load data
 system.load('Galileo.psm')
 
+# Step 6.2: Plot data
+fig = MainWidget()
+fig.loadSystem(system)
+fig.showMaximized()
+mlab.show()
+'''
 # Step 6.2 Plotting
 figure = mlab.figure(size=(600, 600))
 earthImageFile = 'pysamss/plotting/earth.jpg'
@@ -59,3 +66,4 @@ for gsat in gsats:
     northeastdownRF.plot(figure, system.timesteps[timesteps[i]].vessels[gsat].getPosition(), scale_factor=100000)
 
 mlab.show()
+'''
