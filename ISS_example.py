@@ -1,55 +1,53 @@
-# Date: 06/01/2019
+# Date: 06/05/2020
 # Author: Callum Bruce
 # Orbital ISS example
 import numpy as np
 from mayavi import mlab
 from pysamss import *
+import datetime
+import julian
+from jplephem.spk import SPK
+import urllib3
+from sgp4.api import Satrec
 
-# Define Earth
-earth = CelestialBody('Earth', 5.972e24, 6.371e6)
+# Step 1: Setup system
+system = System('EarthISS')
+system.current.setDatetime(datetime.datetime.utcnow()) # Set current time utc
+# Step 1.1: Add Earth and ISS to system
+system.current.addCelestialBody(CelestialBody('Earth', 5.972e24, 6.371e6))
+system.current.addVessel(Vessel('ISS', [Stage(419725, 1, 10, np.array([0, 0, 0]))], parent_name='Earth'))
 
-# Define ISS
-"""
-See https://spaceflight.nasa.gov/realdata/sightings/SSapplications/Post/JavaSSOP/orbit/ISS/SVPOST.html
-See https://celestrak.com/NORAD/elements/stations.txt
-ISS (ZARYA)
-1 25544U 98067A   19197.73699074  .00000224  00000-0  11644-4 0  9990
-2 25544  51.6432 214.6630 0006951 146.0156 190.2537 15.50981102179836
-"""
-line1 = "1 25544U 98067A   19197.73699074  .00000224  00000-0  11644-4 0  9990"
-line2 = "2 25544  51.6432 214.6630 0006951 146.0156 190.2537 15.50981102179836"
+# Step 2: Calculate positions and velocities
+time = np.modf(system.current.getJulianDate()) # Split Julian date into integer and decimal for spg4 library
+# ISS
+http = urllib3.PoolManager()
+tle = http.request('GET', 'https://www.celestrak.com/NORAD/elements/stations.txt')
+tle = tle.data.decode('utf-8').strip().split('\r\n') # Gets full TLE's for constelation into a list
+iss_tle = tle[0:3]
+# Using pysamss methods
+#a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(iss_tle[1], iss_tle[2], system.current.celestial_bodies['Earth'])
+#iss_pos, iss_vel = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, time, system.current.celestial_bodies['Earth'])
+# Using spg4 methods
+iss = Satrec.twoline2rv(iss_tle[1], iss_tle[2])
+e, iss_pos, iss_vel = iss.sgp4(time[1], time[0])
+iss_pos = np.array(iss_pos) * 1000
+iss_vel = np.array(iss_vel) * 1000
 
-a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(line1, line2, earth)
+# Step 3: Set positions and velocities
+system.current.celestial_bodies['Earth'].setAttitudeDot(np.array([0.0, 0.0, np.deg2rad(360 / ((23 * 60 * 60) + (56 * 60) + 4))]))
+system.current.celestial_bodies['Earth'].setTexture('pysamss/resources/earth.jpg')
+system.current.vessels['ISS'].setPosition(iss_pos, local=True)
+system.current.vessels['ISS'].setVelocity(iss_vel, local=True)
 
-iss_position, iss_velocity = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, earth)
-
-stage1 = Stage(415699, 1, 10, np.array([0, 0, 0]))
-iss = Vessel('ISS', [stage1], parent_name='Earth')
-iss.setPosition(iss_position)
-iss.setVelocity(iss_velocity)
-
-# Setup System
-system = System('ISS')
-system.addCelestialBody(earth)
-system.addVessel(iss)
-system.set_dt(1)
-system.set_endtime(5561.0)
-system.set_saveinterval(10)
-system.save()
+# Step 4: Simulate system
+system.setDt(0.1)
+system.setEndTime(5561.0)
+system.setSaveInterval(10)
 system.simulateSystem()
 
-# Plotting
-#issPositions = np.array(iss.state)[:,3:6]
-
-figure = mlab.figure(size=(600, 600))
-
-earthImageFile = 'pysamss/plotting/earth.jpg'
-plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
-#plotTrajectory(figure, issPositions, (1, 1, 1))
-
-northeastdownRF = iss.getNorthEastDownRF()
-northeastdownRF.plot(figure, iss.getPosition(), scale_factor=100000)
-
-mlab.view(focalpoint=iss.getPosition(), figure=figure)
-
+# Step 5: Post processing
+system.load('EarthISS.psm')
+fig = MainWidget()
+fig.loadSystem(system)
+fig.showMaximized()
 mlab.show()

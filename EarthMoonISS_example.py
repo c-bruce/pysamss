@@ -8,9 +8,11 @@ import datetime
 import julian
 from jplephem.spk import SPK
 import urllib3
+from sgp4.api import Satrec
 
 # Step 1: Setup system
 system = System('EarthMoonISS')
+system.current.setDatetime(datetime.datetime.utcnow()) # Set current time utc
 # Step 1.1: Add Earth, Moon and ISS to system
 system.current.addCelestialBody(CelestialBody('Earth', 5.972e24, 6.371e6))
 system.current.addCelestialBody(CelestialBody('Moon', 7.348e22, 1.737e6, parent_name='Earth'))
@@ -28,12 +30,19 @@ moon_pos, moon_vel = kernel[3,301].compute_and_differentiate(time)
 moon_pos *= 1000 # Convert from km -> m
 moon_vel /= 86.4 # Convert from km/day -> m/s
 # ISS
+time = np.modf(time) # Split Julian date into integer and decimal for spg4 library
 http = urllib3.PoolManager()
 tle = http.request('GET', 'https://www.celestrak.com/NORAD/elements/stations.txt')
 tle = tle.data.decode('utf-8').strip().split('\r\n') # Gets full TLE's for constelation into a list
 iss_tle = tle[0:3]
-a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(iss_tle[1], iss_tle[2], system.current.celestial_bodies['Earth'])
-iss_pos, iss_vel = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, time, system.current.celestial_bodies['Earth'])
+# Using pysamss methods
+#a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(iss_tle[1], iss_tle[2], system.current.celestial_bodies['Earth'])
+#iss_pos, iss_vel = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, time, system.current.celestial_bodies['Earth'])
+# Using spg4 methods
+iss = Satrec.twoline2rv(iss_tle[1], iss_tle[2])
+e, iss_pos, iss_vel = iss.sgp4(time[1], time[0])
+iss_pos = np.array(iss_pos) * 1000
+iss_vel = np.array(iss_vel) * 1000
 
 # Step 3: Set positions and velocities
 system.current.celestial_bodies['Earth'].setPosition(earth_pos)

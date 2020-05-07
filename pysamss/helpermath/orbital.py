@@ -63,9 +63,11 @@ def orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, obj0):
     # Step 2: Calculate mean anomaly, M_t in seconds
     if t != t0:
         delta_t = 86400 * (t - t0)
-        M_t = M0 + delta_t * np.sqrt(mu / a**3) # Mean anomaly
-        #M_t = np.arctan(np.sin(M_t - np.pi), np.cos(M_t - np.pi)) + np.pi # Map M_t to values between 0 -> 2 * pi
-        M_t %= (2 * np.pi) # Map M_t to values between 0 -> 2 * pi
+        M_t = M0 + (delta_t * np.sqrt(mu / a**3)) # Mean anomaly
+        M_t = np.arctan2(np.sin(M_t), np.cos(M_t))# Map M_t to values between 0 -> 2 * pi
+        #M_t = np.arctan([np.sin(M_t - np.pi), np.cos(M_t - np.pi)])[0] + (2 * np.pi) # Map M_t to values between 0 -> 2 * pi
+        #M_t %= (2 * np.pi) # Map M_t to values between 0 -> 2 * pi
+        #M_t = np.mod(M_t, (2 * np.pi)) + np.pi # Map M_t to values between 0 -> 2 * pi
     else:
         M_t = M0
     # Step 3: Solve Keplers Equation M(t) = E(t) - e * sin(E(t))

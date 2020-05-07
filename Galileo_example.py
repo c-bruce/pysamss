@@ -5,9 +5,11 @@ import numpy as np
 import urllib3
 from mayavi import mlab
 from pysamss import *
+from sgp4.api import Satrec
 
 # Step 1: Setup System
 system = System('Galileo')
+system.current.setDatetime(datetime.datetime.utcnow()) # Set current time utc
 
 # Step 2: Define Earth
 earth = CelestialBody('Earth', 5.972e24, 6.371e6)
@@ -15,6 +17,8 @@ system.current.addCelestialBody(earth)
 system.current.celestial_bodies['Earth'].setTexture('pysamss/resources/earth.jpg')
 
 # Step 3: Get TLE data for Galileo Constelation
+#time = system.current.getJulianDate()
+time = np.modf(system.current.getJulianDate()) # Split Julian date into integer and decimal for spg4 library
 http = urllib3.PoolManager()
 tle = http.request('GET', 'https://www.celestrak.com/NORAD/elements/galileo.txt')
 tle = tle.data.decode('utf-8').strip().split('\r\n') # Gets full TLE's for constelation into a list
@@ -27,10 +31,16 @@ for i in range(0, int(len(tle)/3)):
     line2 = tle[(i * 3) + 2]
     stage = Stage(675, 0.6, 2.7, np.array([0, 0, 0]))
     gsat = Vessel(name, [stage], parent_name='Earth')
-    a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(line1, line2, earth)
-    position, velocity = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, t, earth)
-    gsat.setPosition(position)
-    gsat.setVelocity(velocity)
+    # Using pysamss methods
+    #a, e, omega, LAN, i, M0, t0, t = twoline2orbitalelements(line1, line2, earth)
+    #position, velocity = orbitalelements2cartesian(a, e, omega, LAN, i, M0, t0, time, earth)
+    # Using spg4 methods
+    sat = Satrec.twoline2rv(line1, line2)
+    e, pos, vel = sat.sgp4(time[1], time[0])
+    pos = np.array(pos) * 1000
+    vel = np.array(vel) * 1000
+    gsat.setPosition(pos)
+    gsat.setVelocity(vel)
     system.current.addVessel(gsat)
 
 # Step 5: Simulate system
@@ -39,31 +49,9 @@ system.setEndTime(50820.0)
 system.setSaveInterval(10)
 system.simulateSystem()
 
-# Step 6: Post Processing
-# Step 6.1: Load data
+# Step 6: Post processing
 system.load('Galileo.psm')
-
-# Step 6.2: Plot data
 fig = MainWidget()
 fig.loadSystem(system)
 fig.showMaximized()
 mlab.show()
-'''
-# Step 6.2 Plotting
-figure = mlab.figure(size=(600, 600))
-earthImageFile = 'pysamss/plotting/earth.jpg'
-earth = system.current.celestial_bodies['Earth']
-plotCelestialBody(figure, earth.getRadius(), earth.getPosition(), earthImageFile)
-
-timesteps = sorted(list(system.timesteps.keys()))
-gsats = system.current.vessels.keys()
-for gsat in gsats:
-    positions = np.empty([len(timesteps), 3])
-    for i in range(0, len(timesteps)):
-        positions[i,:] = system.timesteps[timesteps[i]].vessels[gsat].getPosition()
-    plotTrajectory(figure, positions, (1, 1, 1))
-    northeastdownRF = system.timesteps[timesteps[i]].vessels[gsat].getNorthEastDownRF()
-    northeastdownRF.plot(figure, system.timesteps[timesteps[i]].vessels[gsat].getPosition(), scale_factor=100000)
-
-mlab.show()
-'''
