@@ -1,6 +1,7 @@
 # Date: 24/06/2019
 # Author: Callum Bruce
 # Orbital ISS example including the Earth and Moon. Simulated using System class.
+# To run, ensure 'de430.bsp' is downloaded to the working directory. See https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/.
 import numpy as np
 from mayavi import mlab
 from pysamss import *

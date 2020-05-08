@@ -203,6 +203,9 @@ class System:
     def setScheme(self, scheme):
         """
         Set integration scheme to use for simulating the system.
+
+        Args:
+            scheme (str): Integration scheme to use ['euler', 'rk4'].
         """
         self.scheme = scheme
 
@@ -261,12 +264,20 @@ class System:
                 self.current.setSaveFile(int(i / self.saveinterval))
                 self.save()
             # Step 3: Simulate timestep
-            # Celestial Bodies:
-            for celestial_body in self.current.celestial_bodies.values():
-                celestial_body.simulate(self.dt, celestial_body.euler)
-            # Vessels:
-            for vessel in self.current.vessels.values():
-                vessel.simulate(self.dt, vessel.euler)
+            if self.scheme == 'euler':
+                # Celestial Bodies:
+                for celestial_body in self.current.celestial_bodies.values():
+                    celestial_body.simulate(self.dt, celestial_body.euler)
+                # Vessels:
+                for vessel in self.current.vessels.values():
+                    vessel.simulate(self.dt, vessel.euler)
+            elif self.scheme == 'rk4':
+                # Celestial Bodies:
+                for celestial_body in self.current.celestial_bodies.values():
+                    celestial_body.simulate(self.dt, celestial_body.rk4)
+                # Vessels:
+                for vessel in self.current.vessels.values():
+                    vessel.simulate(self.dt, vessel.rk4)
             # Step 4: Iterate on time
             self.current.setTime(self.current.time + self.dt)
             self.current.setDatetime(self.current.date_time + datetime.timedelta(0, self.dt))
