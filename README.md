@@ -6,8 +6,8 @@ A Python package for managing and simulating assets in Space.
 
 pySAMSS provides a full 6 degree of freedom state space model representation of CelestialBody and Vessel objects. Using numerical integration the future state of CelestialBody and Vessel objects can be found explicitly where:
 
-'''python
-state0 = np.array([u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]) # State
+```python
+state0 = np.array([u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]) # State vector
 
 U = np.array([Fx, Fy, Fz, Mx, My, Mz]) # Input vector
 
@@ -39,8 +39,8 @@ B = np.array([[1/m, 0, 0, 0, 0, 0],
               [0, 0, 0, 0, 0, 0],
               [0, 0, 0, 0, 0, 0]]) # Control matrix. Note: m = mass, Ii = inverse inertia matrix
 
-state_d = np.dot(A, state0) + np.dot(B, U) # State derivative [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, qw_d, qx_d, qy_d, qz_d]
-'''
+state_d = np.dot(A, state0) + np.dot(B, U) # State derivative vector [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, qw_d, qx_d, qy_d, qz_d]
+```
 
 - Full 6dof state space model of Vessel and CelestialBody objects.
 - Includes methods for PID control of state variables.
