@@ -104,7 +104,7 @@ class ReferenceFrame:
 
         Args:
             figure (mlab.figure): Mayavi figure for plot.
-            origin (list): Origin of reference frame in universalRF i.e. [x, y, z]
+            origin (np.array): Origin of reference frame in universalRF i.e. [x, y, z]
         """
         if scale_factor == None:
             scale_factor = 1

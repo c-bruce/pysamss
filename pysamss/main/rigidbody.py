@@ -77,7 +77,7 @@ class RigidBody:
         [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]
 
         Returns:
-            state (list): Current state vector.
+            state (np.array): Current state vector.
         """
         return self.state
 
@@ -87,7 +87,7 @@ class RigidBody:
         [u, v, w, x, y, z, phi_d, theta_d, psi_d, qw, qx, qy, qz]
 
         Args:
-            state (list): State vector to set.
+            state (np.array): State vector to set.
         """
         self.state = state
     
@@ -138,7 +138,7 @@ class RigidBody:
         [u, v, w]
 
         Args:
-            velocity (list): Velocity vector to set.
+            velocity (np.array): Velocity vector to set.
             local (bool): If true velocity is relative to parentRF. Else
                           velocity is relative to universalRF.
         """
@@ -172,7 +172,7 @@ class RigidBody:
         [x, y, z]
 
         Args:
-            position (list): Position vector to set [x, y, z].
+            position (np.array): Position vector to set [x, y, z].
             local (bool): If true position is relative to parentRF. Else
                           position is relative to universalRF.
         """
@@ -206,7 +206,7 @@ class RigidBody:
         [phi_d, theta_d, psi_d]
 
         Args:
-            attitude_dot (list): AttitudeDot vector to set.
+            attitude_dot (np.array): AttitudeDot vector to set.
             local (bool): If true attitude_dot is relative to bodyRF. Else
                           attitude_dot is relative to universalRF.
         """
@@ -325,7 +325,7 @@ class RigidBody:
         [Fx, Fy, Fz, Mx, My, Mz]
 
         Returns:
-            U (list): Current U vector.
+            U (np.array): Input vector U.
         """
         return self.U
 
@@ -335,7 +335,7 @@ class RigidBody:
         [Fx, Fy, Fz, Mx, My, Mz]
 
         Args:
-            U (list): U vector to set.
+            U (np.array): Input vector U.
         """
         self.U = U
 
@@ -345,7 +345,7 @@ class RigidBody:
         [Fx, Fy, Fz]
 
         Args:
-            force (list): Force vector to add.
+            force (np.array): Force vector to add.
             local (bool): If true force is transformed from bodyRF to
                           universalRF before it is added to the U vector.
         """
@@ -360,7 +360,7 @@ class RigidBody:
         [Mx, My, Mz]
 
         Args:
-            torque (list): Torque vector to add.
+            torque (np.array): Torque vector to add.
             local (bool): If true torque is transformed from bodyRF to
                           universalRF before it is added to the U vector.
         """
@@ -458,21 +458,6 @@ class RigidBody:
             bodyFixedRF (obj): Body fixed ReferenceFrame object.
         """
         self.bodyFixedRF = bodyFixedRF
-
-    def getParentChain(self):
-        """
-        Get list which describes chain of parent bodies for transforming between
-        RFs. Terminates with final bodys RF = None which indicates the universalRF.
-
-        Returns:
-            chain (list): List of bodies in chain i.e. the Moons chain would be
-                          [Earth, Sun]
-        """
-        chain = [self.parent]
-        while chain[-1] != None:
-            chain.append(chain[-1].parent)
-        chain = chain[:-1]
-        return chain
     
     def getMass(self):
         """
