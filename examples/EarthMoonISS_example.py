@@ -21,8 +21,8 @@ system.current.addVessel(pysamss.Vessel('ISS', [pysamss.Stage(419725, 1, 10, np.
 # Step 2: Calculate positions and velocities
 time = system.current.getJulianDate()
 kernel = SPK.open('de430.bsp')
-earth_pos, earth_vel = kernel[3,399].compute_and_differentiate(time)
 # Earth
+earth_pos, earth_vel = kernel[3,399].compute_and_differentiate(time)
 earth_pos *= 1000 # Convert from km -> m
 earth_vel /= 86.4 # Convert from km/day -> m/s
 # Moon

@@ -260,7 +260,7 @@ class RigidBody:
             R = referenceFrames2rotationMatrix(self.bodyRF, self.universalRF)
             attitude = Quaternion(matrix=R)
         else:
-            self.bodyRF = ReferenceFrame()
+            self.bodyRF.setIJK(np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))
             self.bodyRF.rotate(attitude)
         self.state[9:13] = list(attitude)
     

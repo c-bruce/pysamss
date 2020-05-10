@@ -170,14 +170,14 @@ class Timestep:
         for celestial_body in self.celestial_bodies:
             if self.celestial_bodies[celestial_body].parent_name is not None:
                 self.celestial_bodies[celestial_body].setParent(self.celestial_bodies[celestial_body].parent_name)
-                self.celestial_bodies[celestial_body].setParentRF(self.reference_frames[self.celestial_bodies[celestial_body].parent_name + 'RF'])
+                self.celestial_bodies[celestial_body].setParentRF(self.reference_frames[self.celestial_bodies[celestial_body].parent_name + 'FixedRF'])
             self.celestial_bodies[celestial_body].setUniversalRF(self.universalRF)
             self.celestial_bodies[celestial_body].setBodyRF(self.reference_frames[self.celestial_bodies[celestial_body].name + 'RF'])
             self.celestial_bodies[celestial_body].setBodyFixedRF(self.reference_frames[self.celestial_bodies[celestial_body].name + 'FixedRF'])
         for vessel in self.vessels:
             if self.vessels[vessel].parent_name is not None:
                 self.vessels[vessel].setParent(self.celestial_bodies[self.vessels[vessel].parent_name])
-                self.vessels[vessel].setParentRF(self.reference_frames[self.vessels[vessel].parent_name + 'RF'])
+                self.vessels[vessel].setParentRF(self.reference_frames[self.vessels[vessel].parent_name + 'FixedRF'])
             self.vessels[vessel].setUniversalRF(self.universalRF)
             self.vessels[vessel].setBodyRF(self.reference_frames[self.vessels[vessel].name + 'RF'])
 
