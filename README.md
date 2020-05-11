@@ -48,7 +48,7 @@ state_d = np.dot(A, state0) + np.dot(B, U) # State derivative vector [u_d, v_d, 
 
 # Using pySAMSS
 
-Begin by creating a System instance and add CelestialBody and Vessel objects to the current Timestep...
+Begin by creating a System instance and add CelestialBody and Vessel objects to the current Timestep:
 
 ```python
 # Create System instance
@@ -62,7 +62,7 @@ system.current.addCelestialBody(pysamss.CelestialBody('Moon', 7.348e22, 1.737e6,
 system.current.addVessel(pysamss.Vessel('ISS', [pysamss.Stage(419725, 1, 10, np.array([0, 0, 0]))], parent_name='Earth'))
 ```
 
-Define and set initial conditions for CelestialBody objects. This can be done convieniently using the [jplephem](https://pypi.org/project/jplephem/) package which can load and use ephemeris from NASA's Jet Propulsion Laboratory...
+Define and set initial conditions for CelestialBody objects. This can be done convieniently using the [jplephem](https://pypi.org/project/jplephem/) package which can load and use ephemeris from NASA's Jet Propulsion Laboratory:
 
 ```python
 time = system.current.getJulianDate()
@@ -81,7 +81,7 @@ system.current.celestial_bodies['Moon'].setPosition(moon_pos)
 system.current.celestial_bodies['Moon'].setVelocity(moon_vel)
 ```
 
-Define and set initial conditions for Vessel objects. This can be done convieniently using the [spk4](https://pypi.org/project/sgp4/) package which takes Two Line Element (TLE) data from [CelesTrak](http://celestrak.com/) and returns position and velocity vectors relative to the Earth-centered inertial coordinate system...
+Define and set initial conditions for Vessel objects. This can be done convieniently using the [spk4](https://pypi.org/project/sgp4/) package which takes Two Line Element (TLE) data from [CelesTrak](http://celestrak.com/) and returns position and velocity vectors relative to the Earth-centered inertial coordinate system:
 
 ```python
 # Get TLE data from CelesTrak
@@ -109,7 +109,7 @@ system.setSaveInterval(10)
 system.simulateSystem()
 ```
 
-All simulation data is written out to *.h5 files saved in the *_data directory. Once a simulation is complete this data can be read and post processed. pySAMSS comes with an interactive widget, based on [mayavi](https://docs.enthought.com/mayavi/mayavi/), for visually post processing simulation data...
+All simulation data is written out to *.h5 files saved in the *_data directory. Once a simulation is complete this data can be read and post processed. pySAMSS comes with an interactive widget, based on [mayavi](https://docs.enthought.com/mayavi/mayavi/), for visually post processing simulation data:
 
 ```python
 # Load system data
