@@ -54,10 +54,16 @@ To install the latest development version of pySAMSS first make sure you have gi
 git clone https://github.com/c-bruce/pysamss.git
 ```
 
-... and then run setup.py to install:
+Next, build the .tar.gz distributable:
 
 ```
-python setup.py install
+python setup.py sdist
+```
+
+Finally, cd into the ./dist/ folder and install using pip:
+
+```
+pip install pysamss-0.0.1.tar.gz
 ```
 
 # Using pySAMSS
