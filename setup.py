@@ -26,5 +26,6 @@ setup(name='pysamss',
                         'numpy>=1.18.1',
                         'PyQt5>=5.14.2',
                         'pyquaternion>=0.9.5',
-                        'sgp4>=2.7']
+                        'sgp4>=2.7',
+                        'vtk>=8.1.2']
      )

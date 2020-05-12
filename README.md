@@ -46,6 +46,20 @@ B = np.array([[1/m, 0, 0, 0, 0, 0],
 state_d = np.dot(A, state0) + np.dot(B, U) # State derivative vector [u_d, v_d, w_d, x_d, y_d, z_d, phi_dd, theta_dd, psi_dd, qw_d, qx_d, qy_d, qz_d]
 ```
 
+# Installation
+
+To install the latest development version of pySAMSS first make sure you have git installed, see [here](https://git-scm.com/downloads), then clone the repository:
+
+```
+git clone https://github.com/c-bruce/pysamss.git
+```
+
+... and then run setup.py to install:
+
+```
+python setup.py install
+```
+
 # Using pySAMSS
 
 Begin by creating a System instance and add CelestialBody and Vessel objects to the current Timestep:
@@ -99,7 +113,7 @@ system.current.vessels['ISS'].setPosition(iss_pos, local=True)
 system.current.vessels['ISS'].setVelocity(iss_vel, local=True)
 ```
 
-Set system timestep, end time, save interval and run the simulation...
+Set system timestep, end time, save interval and run the simulation:
 
 ```python
 # Simulate system
