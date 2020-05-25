@@ -50,9 +50,9 @@ state_d = np.dot(A, state0) + np.dot(B, U) # State derivative vector [u_d, v_d, 
 
 Install latest version on pip using:
 
-'''
+```
 pip install pysamss
-'''
+```
 
 Alternatively, to install the latest development version of pySAMSS first make sure you have git installed, see [here](https://git-scm.com/downloads), then clone the repository:
 
