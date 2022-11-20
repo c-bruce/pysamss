@@ -64,7 +64,7 @@ class System:
 
         Args:
             path (str): Path to *.psm file.
-            every_nth (int): Load every nth save timestep.
+            every_nth (int): Load every nth save timestep. Default = 1.
             getAll (bool): Load all data boolean. Default = True.
         """
         # Reset timesteps dict

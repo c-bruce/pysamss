@@ -1,0 +1,6 @@
+**.bsp
+.vscode
+**_data
+**/examples/*_texture.jpg
+**/*.psm
+**/*.pyc
