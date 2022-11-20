@@ -58,12 +58,13 @@ class System:
         self.current.save(f)
         f.close()
     
-    def load(self, path, getAll=True):
+    def load(self, path, every_nth=1, getAll=True):
         """
         Load system data.
 
         Args:
             path (str): Path to *.psm file.
+            every_nth (int): Load every nth save timestep.
             getAll (bool): Load all data boolean. Default = True.
         """
         # Reset timesteps dict
@@ -71,7 +72,7 @@ class System:
         self.save_directory = self.name + '_data'
         self.timesteps = {}
         # Load data into timesteps dict
-        timestep_paths = glob.glob(self.save_directory + '/*.h5')
+        timestep_paths = glob.glob(self.save_directory + '/*.h5')[::every_nth]
         if getAll:
             i = 0
             for timestep_path in timestep_paths:

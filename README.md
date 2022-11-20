@@ -163,7 +163,8 @@ Notes:
 
 pySAMSS is currently in an early stage of development and as such there are a number of limitations, such as:
 
-- Performance (pySAMSS is currently not optimized for speed)
+- Simulation performance (pySAMSS is currently not optimized)
+- Load performance (slow memory intensive loading)
 - System class only includes gravity force/torque source
 - No aerodynamic force/torque source
 - Not able to use controllers inside System class
