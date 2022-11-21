@@ -37,7 +37,7 @@ moon_pos *= 1000 # Convert from km -> m
 moon_vel /= 86.4 # Convert from km/day -> m/s
 # Orion
 orion_pos = (np.array(P) * 1609.34) + earth_pos
-orion_vel = np.array(V) * 0.44704
+orion_vel = (np.array(V) * 0.44704) + earth_vel
 
 # Step 3: Set positions and velocities
 system.current.celestial_bodies['Earth'].setPosition(earth_pos)
@@ -74,7 +74,7 @@ print(f"P: {earth_orion_P * 0.000621371} [miles]")
 print(f"V: {orion_V * 2.23694} [miles/hour]")
 
 # Results:
-# Earth - Orion: 61102.10258927134 [miles]
-# Moon - Orion: 202045.76621301303 [miles]
-# P: [-64596.40549525  -7266.35058931   2723.91074462] [miles]
-# V: [-4895.47960603 -1906.98847747  -580.37085092] [miles/hour]
+# Earth - Orion: 61032.68112835576 [miles]
+# Moon - Orion: 202027.69764029287 [miles]
+# P: [-64533.65990938  -7188.84465385   2759.3431476 ] [miles]
+# V: [-4878.72072754 -1888.10892566  -571.89357244] [miles/hour]

@@ -9,14 +9,14 @@ from jplephem.spk import SPK
 import pysamss
 
 # Step 1: Setup system
-#Mission Time: 1 days, 10  hrs, 5  min
-#Orion is 143,639 miles from Earth, 162,177 miles from the Moon, cruising at 2,562 miles per hour.
-P = [-140635, -43594, -10314]
-V = [-2167, -1269, -508]
-#O: 53º, 50.8º, 11.2º
-system = pysamss.System('EarthMoonOrion_Pt8')
+# Mission Time: 2 days, 14  hrs, 6  min
+# Orion is 196,207 miles from Earth, 122,088 miles from the Moon, cruising at 1,464 miles per hour.
+P = [-184803, -73390, -22977]
+V = [-1100, -880, -397]
+# O: 295º, 313.2º, 168.9º
+system = pysamss.System('EarthMoonOrion_Pt15')
 launch_time = datetime.datetime(2022, 11, 16, 6, 47, 44)
-time_delta = datetime.timedelta(days=1, hours=10, minutes=5)
+time_delta = datetime.timedelta(days=2, hours=14, minutes=6)
 system.current.setDatetime(launch_time + time_delta)
 
 # Step 1.1: Add Earth, Moon and ISS to system
@@ -74,7 +74,7 @@ print(f"P: {earth_orion_P * 0.000621371} [miles]")
 print(f"V: {orion_V * 2.23694} [miles/hour]")
 
 # Results:
-# Earth - Orion: 153125.06233061437 [miles]
-# Moon - Orion: 156736.4893449719 [miles]
-# P: [-148888.96424353  -48536.52165765  -12312.91786038] [miles]
-# V: [-1956.23318034 -1180.04590829  -480.15032231] [miles/hour]
+# Earth - Orion: 201506.19837515324 [miles]
+# Moon - Orion: 115845.08475860742 [miles]
+# P: [-188980.3473215   -76813.95397606  -24533.48158616] [miles]
+# V: [-988.71211191 -807.92408314 -368.79856473] [miles/hour]
