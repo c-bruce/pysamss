@@ -31,7 +31,7 @@ class Timestep:
             self.date_time = datetime.datetime(2020, 3, 20, 3, 50)
         else:
             self.date_time = date_time
-        self.savefile = None
+        self.savefile = 0
         self.universalRF = ReferenceFrame(name='UniversalRF')
         self.reference_frames = {self.universalRF.name : self.universalRF}
         self.celestial_bodies = {}

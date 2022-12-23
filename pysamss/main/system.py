@@ -90,7 +90,9 @@ class System:
                 print("Load; Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
             print('\n')
         else:
-            timestep_path = timestep_paths[-1]
+            # Need to tidy this up!
+            latest_index = np.where(np.vectorize(lambda x: int(x[44:-3]))(timestep_paths) == max(np.vectorize(lambda x: int(x[44:-3]))(timestep_paths)))[0][0]
+            timestep_path = timestep_paths[latest_index]
             f = h5py.File(timestep_path, 'r')
             new_timestep = Timestep()
             new_timestep.load(f)
@@ -262,7 +264,8 @@ class System:
                 obj1.addForce(gravityForce)
             # Step 2: Save data - included at this stage so that U is populated
             if i % self.saveinterval == 0:
-                self.current.setSaveFile(int(i / self.saveinterval))
+                #self.current.setSaveFile(int(i / self.saveinterval))
+                self.current.setSaveFile(self.current.savefile + 1)
                 self.save()
             # Step 3: Simulate timestep
             if self.scheme == 'euler':

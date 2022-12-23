@@ -6,6 +6,8 @@ from .mayavi_qwidget import MayaviQWidget
 
 from tvtk.api import tvtk
 
+from mayavi import mlab
+
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QHBoxLayout, QSplitter, QTreeView, QWidget, QPushButton, QTabWidget, QSlider
 
@@ -103,8 +105,9 @@ class MainWidget(QSplitter):
         self.system = None
         self.actors = {}
     
-    def loadSystem(self, system):
+    def loadSystem(self, system, save_animation=False):
         self.system = system
+        self.save_animation = save_animation
         self.slider.setMaximum(max(list(system.timesteps.keys())))
         timesteps = sorted(list(self.system.timesteps.keys()))
         # DateTime actor
@@ -114,6 +117,8 @@ class MainWidget(QSplitter):
         text_actor = tvtk.Actor2D(mapper=text_mapper)
         self.actors['DateTime'] = [text_source, text_mapper, text_actor]
         self.viewer.visualization.scene3d.add_actor(self.actors['DateTime'][2])
+        if save_animation:
+            self.animation_index = 0
         # CelestialBodies
         for celestial_body in self.system.current.celestial_bodies.values():
             celestial_body_actor = {}
@@ -167,7 +172,7 @@ class MainWidget(QSplitter):
                 points[i,:] = system.timesteps[timesteps[i]].vessels[vessel.name].getPosition()
             line_source = tvtk.LineSource(points=points) # Can modify line_source using line_source.trait_set(points=data)
             line_mapper = tvtk.PolyDataMapper(input_connection=line_source.output_port)
-            p = tvtk.Property(line_width=2, color=(1, 1, 1))
+            p = tvtk.Property(line_width=2, color=(1, 0, 1))
             line_actor = tvtk.Actor(mapper=line_mapper, property=p)
             vessel_actor['trajectory'] = [points, line_source, line_actor]
             # Add actors to the scene
@@ -200,7 +205,7 @@ class MainWidget(QSplitter):
                 self.actors[celestial_body.name]['bodyRF'][4].trait_set(points=j_points)
                 self.actors[celestial_body.name]['bodyRF'][5].trait_set(points=k_points)
                 # Update trajectory actor
-                self.actors[celestial_body.name]['trajectory'][1].trait_set(points=self.actors[celestial_body.name]['trajectory'][0][:value + 1])
+                self.actors[celestial_body.name]['trajectory'][1].trait_set(points=self.actors[celestial_body.name]['trajectory'][0][:value])
             # Vessels
             for vessel in self.system.current.vessels.values():
                 # Update bodyRF actors
@@ -213,8 +218,11 @@ class MainWidget(QSplitter):
                 self.actors[vessel.name]['bodyRF'][4].trait_set(points=j_points)
                 self.actors[vessel.name]['bodyRF'][5].trait_set(points=k_points)
                 # Update trajectory actor
-                self.actors[vessel.name]['trajectory'][1].trait_set(points=self.actors[vessel.name]['trajectory'][0][:value + 1])
+                self.actors[vessel.name]['trajectory'][1].trait_set(points=self.actors[vessel.name]['trajectory'][0][:value])
         self.viewer.visualization.scene3d.render()
+        if self.save_animation:
+            mlab.savefig(f"{self.animation_index}.png")
+            self.animation_index += 1
 
 # Main loop
 if __name__ == '__main__':
