@@ -90,8 +90,7 @@ class System:
                 print("Load; Progress: " + str(np.around(progress, decimals = 2)) + " %.", end="\r")
             print('\n')
         else:
-            # Need to tidy this up!
-            latest_index = np.where(np.vectorize(lambda x: int(x[44:-3]))(timestep_paths) == max(np.vectorize(lambda x: int(x[44:-3]))(timestep_paths)))[0][0]
+            latest_index = max(range(len(timestep_paths)), key=lambda i: int(timestep_paths[i][len(self.save_directory + "/"):-3]))
             timestep_path = timestep_paths[latest_index]
             f = h5py.File(timestep_path, 'r')
             new_timestep = Timestep()
